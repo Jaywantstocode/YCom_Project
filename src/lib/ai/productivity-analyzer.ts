@@ -8,6 +8,28 @@ import { GoogleModel } from './lm-models';
 import { loadVideoData } from './video-loader';
 import { PRODUCTIVITY_AGENT_PROMPT } from './prompts';
 
+/**
+ * Send productivity advice as notification
+ */
+async function sendProductivityNotification(userAdvice: string): Promise<void> {
+  try {
+    await fetch('/api/send-productivity-advice', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        title: '💡 生産性アドバイス',
+        body: userAdvice
+      })
+    });
+    console.log('📱 生産性アドバイス通知を送信しました');
+  } catch (error) {
+    console.warn('⚠️ 通知送信に失敗:', error);
+    // 通知エラーは分析結果に影響しない
+  }
+}
+
 // Session data (from SessionContext)
 export interface SessionRecord {
   id: string;
@@ -114,6 +136,11 @@ export async function analyzeVideoBase64(videoBase64: string): Promise<Productiv
       analysis = { rawText: result.text };
     }
     
+    // 分析完了時にユーザーアドバイスを通知
+    if (analysis && analysis.userAdvice) {
+      await sendProductivityNotification(analysis.userAdvice);
+    }
+    
     return {
       success: true,
       analysis,
@@ -173,6 +200,11 @@ export async function analyzeFrames(frames: string[]): Promise<ProductivityAnaly
       console.error('❌ JSON解析エラー:', parseError);
       // Return raw text if JSON parsing fails
       analysis = { rawText: result.text };
+    }
+    
+    // 分析完了時にユーザーアドバイスを通知
+    if (analysis && analysis.userAdvice) {
+      await sendProductivityNotification(analysis.userAdvice);
     }
     
     return {

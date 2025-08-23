@@ -15,6 +15,7 @@
     "screen-capture-analyze": "tsx scripts/screen-capture-analyze.ts",
     "screen-capture-analyze-and-save": "tsx scripts/debug-screen-capture-analyze-with-save.ts",
     "debug-agent": "tsx scripts/debug-agent.ts",
+    "test-notification": "tsx scripts/test-productivity-notification.ts",
     "import:tools": "tsx scripts/import-tools.ts",
     "import:knowledge": "tsx scripts/import-knowledge-from-csv.ts"
   },

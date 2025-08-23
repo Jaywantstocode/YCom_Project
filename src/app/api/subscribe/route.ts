@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// WARNING: Demo-only in-memory store. Replace with DB in production.
-const subscriptions: unknown[] = [];
+import { addSubscription } from '@/lib/notifications/subscriptions';
 
 export async function POST(req: NextRequest) {
 	const subscription = await req.json();
-	subscriptions.push(subscription);
+	addSubscription(subscription);
 	return NextResponse.json({ message: 'Subscription saved' });
 }
