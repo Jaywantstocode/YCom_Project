@@ -3,6 +3,9 @@
 import { useCallback, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { useNotifications } from '@/hooks/useNotifications';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 
 type UploadResult = { url: string; path: string } | null;
 
@@ -220,42 +223,35 @@ export default function CaptureClient() {
 	}, []);
 
 	return (
-		<div className="w-full max-w-2xl flex flex-col gap-4">
-			<div className="flex items-center justify-between">
-				<div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/70 backdrop-blur px-3 py-1 text-sm shadow-sm">
-					<input id="saveLocal" type="checkbox" className="accent-blue-600" checked={saveLocal} onChange={(e) => setSaveLocal(e.target.checked)} />
-					<label htmlFor="saveLocal" className="select-none">Save locally</label>
+		<Card className="w-full max-w-2xl">
+			<CardHeader>
+				<CardTitle>Capture</CardTitle>
+				<CardDescription>Auto capture screenshots and recordings; save locally and upload.</CardDescription>
+			</CardHeader>
+			<CardContent className="flex flex-col gap-4">
+				<div className="flex items-center justify-between">
+					<div className="inline-flex items-center gap-2">
+						<Switch id="saveLocal" checked={saveLocal} onCheckedChange={(v) => setSaveLocal(Boolean(v))} />
+						<label htmlFor="saveLocal" className="select-none text-sm text-gray-700">Save locally</label>
+					</div>
 				</div>
-			</div>
-			<div className="flex gap-3">
-				{!isRecording ? (
-					<button
-						onClick={handleStartRecording}
-						className="px-4 py-2 rounded-lg bg-emerald-600 text-white shadow hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-					>
-						Start Recording (auto)
-					</button>
-				) : (
-					<button
-						onClick={handleStopRecording}
-						className="px-4 py-2 rounded-lg bg-red-600 text-white shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
-					>
-						Stop Recording
-					</button>
-				)}
-				<button
-					onClick={handleScreenshot}
-					className="px-4 py-2 rounded-lg bg-blue-600 text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-				>
-					Take Screenshot Now
-				</button>
-			</div>
-			<div className="text-sm text-gray-600 min-h-5">{status}</div>
+				<div className="flex gap-3">
+					{!isRecording ? (
+						<Button onClick={handleStartRecording} variant="default">Start Recording (auto)</Button>
+					) : (
+						<Button onClick={handleStopRecording} variant="destructive">Stop Recording</Button>
+					)}
+					<Button onClick={handleScreenshot} variant="secondary">Take Screenshot Now</Button>
+				</div>
+				<div className="text-sm text-gray-600 min-h-5">{status}</div>
+			</CardContent>
 			{uploaded?.url ? (
-				<a className="inline-flex w-fit items-center gap-2 rounded-lg border border-gray-200 bg-white/70 px-3 py-2 text-sm text-blue-700 underline shadow hover:no-underline" href={uploaded.url} target="_blank" rel="noreferrer">
-					Open last upload
-				</a>
+				<CardFooter>
+					<a className="inline-flex w-fit items-center gap-2 rounded-lg border border-gray-200 bg-white/70 px-3 py-2 text-sm text-blue-700 underline shadow hover:no-underline" href={uploaded.url} target="_blank" rel="noreferrer">
+						Open last upload
+					</a>
+				</CardFooter>
 			) : null}
-		</div>
+		</Card>
 	);
 }

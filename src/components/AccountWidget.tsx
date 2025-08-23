@@ -2,6 +2,9 @@
 
 import { useNotifications } from '@/hooks/useNotifications';
 import { useEffect, useRef, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 
 function urlBase64ToUint8Array(base64String: string) {
 	const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -78,7 +81,6 @@ export default function AccountWidget() {
 					setPushMessage('Already subscribed');
 					return;
 				}
-				// Different key -> unsubscribe then resubscribe
 				await existing.unsubscribe();
 			}
 			const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidKey) });
@@ -88,7 +90,6 @@ export default function AccountWidget() {
 			setPushMessage('Subscribed to push');
 		} catch (e) {
 			const msg = e instanceof Error ? e.message : 'Error';
-			// Handle key mismatch fallback: attempt unsubscribe then resubscribe once
 			if (msg.includes('applicationServerKey')) {
 				try {
 					const reg = await navigator.serviceWorker.ready;
@@ -132,24 +133,20 @@ export default function AccountWidget() {
 
 	return (
 		<div className="fixed right-4 bottom-4 z-20">
-			<div className="flex items-center gap-3 px-3 py-2 rounded-xl border bg-white/90 backdrop-blur border-gray-200 shadow-sm">
-				<div className={`h-2.5 w-2.5 rounded-full ${granted ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-				<div className="text-sm">{granted ? 'Notifications on' : 'Notifications off'}</div>
-				<button className="ml-2 inline-flex items-center rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-800 shadow hover:bg-gray-50 disabled:opacity-50" onClick={() => request()} disabled={!isSupported || granted || busy}>
-					Enable notif
-				</button>
-				<button className="ml-1 inline-flex items-center rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-800 shadow hover:bg-gray-50 disabled:opacity-50" onClick={subscribeToPush} disabled={busy}>
-					Subscribe Push
-				</button>
-				<button className="ml-1 inline-flex items-center rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-800 shadow hover:bg-gray-50 disabled:opacity-50" onClick={sendTestPush} disabled={!subscribed || busy}>
-					Test Push
-				</button>
-				<label className="ml-2 inline-flex items-center gap-2 text-xs">
-					<input type="checkbox" className="accent-blue-600" checked={autoTest} onChange={(e) => setAutoTest(e.target.checked)} />
-					Auto 10s Test
-				</label>
-			</div>
-			{pushMessage ? <div className="mt-2 text-xs text-gray-700 bg-white/80 border border-gray-200 rounded px-2 py-1 shadow-sm">{pushMessage}</div> : null}
+			<Card className="px-3 py-2">
+				<div className="flex items-center gap-3">
+					<div className={`h-2.5 w-2.5 rounded-full ${granted ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+					<div className="text-sm">{granted ? 'Notifications on' : 'Notifications off'}</div>
+					<Button variant="outline" size="sm" onClick={() => request()} disabled={!isSupported || granted || busy}>Enable notif</Button>
+					<Button variant="outline" size="sm" onClick={subscribeToPush} disabled={busy}>Subscribe Push</Button>
+					<Button variant="outline" size="sm" onClick={sendTestPush} disabled={!subscribed || busy}>Test Push</Button>
+					<div className="inline-flex items-center gap-2 text-xs">
+						<Switch id="autoTest" checked={autoTest} onCheckedChange={(v) => setAutoTest(Boolean(v))} />
+						<label htmlFor="autoTest">Auto 10s Test</label>
+					</div>
+				</div>
+				{pushMessage ? <div className="mt-2 text-xs text-gray-700">{pushMessage}</div> : null}
+			</Card>
 		</div>
 	);
 }
