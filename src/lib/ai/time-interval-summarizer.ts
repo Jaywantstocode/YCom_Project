@@ -179,7 +179,7 @@ export async function generateIntervalSummary(input: IntervalSummaryInput): Prom
 
     // サマリーテキストを結合
     const combinedSummaries = sourceSummaries
-      .map((item, index) => {
+      .map((item) => {
         const time = new Date(item.started_at).toLocaleTimeString('ja-JP', { 
           hour: '2-digit', 
           minute: '2-digit' 

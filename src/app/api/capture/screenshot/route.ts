@@ -28,36 +28,53 @@ export async function POST(request: Request) {
 		if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 		const { data: publicUrlData } = supabase.storage.from('captures').getPublicUrl(data.path);
 
-		// Create or link action log, insert images row, and analyze in background
+		// Create action log, insert images row, then analyze
 		try {
 			if (userId) {
 				const actionLogId = randomUUID();
-				// Create a placeholder action_log row to link image, will be updated by analyzer
-				await supabase.from('action_logs').upsert({
-					id: actionLogId,
-					user_id: userId,
-					type: 'screen_capture_screenshot',
-					started_at: new Date().toISOString(),
-					details: { storage_path: data.path },
-				});
+				const startedAt = new Date().toISOString();
+				const { data: insertedLog, error: logErr } = await supabase
+					.from('action_logs')
+					.insert({
+						id: actionLogId,
+						user_id: userId,
+						type: 'screen_capture_analyze',
+						started_at: startedAt,
+						details: { storage_path: data.path },
+						tags: ['capture','screenshot'],
+					})
+					.select('id')
+					.single();
+				if (logErr || !insertedLog) {
+					console.error('action_logs insert failed', logErr);
+					return NextResponse.json({ error: 'Failed to create action log' }, { status: 500 });
+				}
 				// Link image to action_log
-				await supabase.from('images').insert({
+				const { error: imgErr } = await supabase.from('images').insert({
 					user_id: userId,
 					storage_path: data.path,
 					mime_type: file.type || 'image/png',
 					size_bytes: buffer.length,
-					captured_at: new Date().toISOString(),
+					captured_at: startedAt,
 					action_log_id: actionLogId,
 				});
-				// Run analysis + embedding save without blocking response
-				void analyzeAndSaveScreenCapture({
+				if (imgErr) {
+					console.error('images insert failed', imgErr);
+					return NextResponse.json({ error: 'Failed to save image row' }, { status: 500 });
+				}
+				// Run analysis + embedding save synchronously to ensure DB update before returning
+				await analyzeAndSaveScreenCapture({
 					image: Buffer.from(buffer),
 					timestamp: Date.now(),
 					userId,
 					actionLogId,
 				});
+				return NextResponse.json({ path: data.path, url: publicUrlData.publicUrl, action_log_id: actionLogId });
 			}
-		} catch {}
+		} catch (e) {
+			console.error('screenshot handler error', e);
+			return NextResponse.json({ error: 'Failed during DB linkage' }, { status: 500 });
+		}
 
 		return NextResponse.json({ path: data.path, url: publicUrlData.publicUrl });
 	} catch (e) {

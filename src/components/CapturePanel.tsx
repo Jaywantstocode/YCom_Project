@@ -1,57 +1,40 @@
 "use client";
 
-import { useCallback, useState } from 'react';
-import { useSessionContext } from '@/context/SessionContext';
-import AgentLog from './AgentLog';
+import dynamic from 'next/dynamic';
+
+const LiveActionLogs = dynamic(() => import('./LiveActionLogs'), { ssr: false });
 import CaptureClient from './CaptureClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import ActionLogViewer from '@/components/ActionLogViewer';
 
 export default function CapturePanel() {
-	const sessionCtx = useSessionContext();
-	const [started, setStarted] = useState(false);
-
-	const handleStart = useCallback(() => {
-		sessionCtx.startSession();
-		setStarted(true);
-		setTimeout(() => {
-			sessionCtx.appendLog({ level: 'info', message: 'Analyzing screen...' });
-			setTimeout(() => {
-				sessionCtx.appendTip({ title: 'Try keyboard shortcuts', detail: 'Press ⌘K to open the command palette.' });
-			}, 1200);
-		}, 0);
-	}, [sessionCtx]);
-
-	const handleStop = useCallback(() => {
-		sessionCtx.stopSession();
-		setStarted(false);
-	}, [sessionCtx]);
-
 	return (
 		<div className="flex-1 h-[calc(100vh-2rem)] overflow-hidden p-4">
 			<div className="max-w-3xl mx-auto h-full flex flex-col gap-4">
-				<div className="flex items-center gap-3">
-					{!started ? (
-						<Button onClick={handleStart}>Start Session</Button>
-					) : (
-						<Button onClick={handleStop} variant="destructive">Stop Session</Button>
-					)}
+				<div className="">
+					<CaptureClient />
 				</div>
-				{started ? (
-					<Card className="flex-1 overflow-hidden">
-						<CardHeader>
-							<CardTitle>AI Logs</CardTitle>
-							<CardDescription>Real-time assistant output and tips</CardDescription>
-						</CardHeader>
-						<CardContent className="h-full overflow-auto">
-							<AgentLog />
-						</CardContent>
-					</Card>
-				) : (
-					<div className="">
-						<CaptureClient />
+				<div className="rounded-xl border border-gray-200 bg-white/70">
+					<div className="px-6 pt-4">
+						<div className="flex items-center gap-2">
+							<h3 className="text-base font-semibold">Live Logs</h3>
+							<div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+						</div>
+						<p className="text-sm text-gray-600">Real-time action logs from captures and analysis</p>
 					</div>
-				)}
+					<div className="px-2 pb-2">
+						<LiveActionLogs />
+					</div>
+				</div>
+				<div className="rounded-xl border border-gray-200 bg-white/70">
+					<div className="px-6 pt-4">
+						<h3 className="text-base font-semibold">Summaries (10 min)</h3>
+						<p className="text-sm text-gray-600">summary_10min windows with their screen captures</p>
+					</div>
+					<div className="px-2 pb-2">
+						<ActionLogViewer />
+					</div>
+				</div>
 			</div>
 		</div>
 	);

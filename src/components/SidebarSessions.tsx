@@ -1,12 +1,9 @@
 "use client";
 
-import { useMemo } from 'react';
-import { useSessionContext } from '@/context/SessionContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import { UserProfile } from '@/components/UserProfile';
+import Link from 'next/link';
 
 function formatTime(ts: number) {
 	const d = new Date(ts);
@@ -14,37 +11,19 @@ function formatTime(ts: number) {
 }
 
 export default function SidebarSessions() {
-	const { sessions, activeSessionId, startSession, stopSession, clearAll } = useSessionContext();
-	const hasActive = !!activeSessionId;
-
-	const items = useMemo(() => sessions, [sessions]);
-
 	return (
 		<aside className="w-72 shrink-0 h-[calc(100vh-4rem)]">
 			<Card className="h-full flex flex-col">
-				<CardHeader className="flex-row items-center justify-between space-y-0">
-					<CardTitle className="text-base">Sessions</CardTitle>
-					<Button variant="ghost" size="sm" onClick={clearAll}>Clear</Button>
+				<CardHeader className="space-y-1">
+					<CardTitle className="text-base">Account</CardTitle>
 				</CardHeader>
-				<CardContent className="flex flex-col gap-3 h-[calc(100%-3.5rem)]">
-					<Button onClick={startSession}>New Session</Button>
-					<ScrollArea className="flex-1">
-						<div className="flex flex-col gap-2 pr-2">
-							{items.map((s) => (
-								<div key={s.id} className={`p-3 rounded-lg border ${s.id === activeSessionId ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
-									<div className="text-sm font-medium">{formatTime(s.startedAt)}</div>
-									<div className="mt-1">
-										<Badge variant={s.stoppedAt ? 'secondary' : 'default'}>{s.stoppedAt ? 'Stopped' : 'Active'}</Badge>
-									</div>
-								</div>
-							))}
-						</div>
-					</ScrollArea>
-					{hasActive && (
-						<Button variant="secondary" onClick={stopSession}>Stop</Button>
-					)}
-					<div className="mt-auto pt-3 border-t">
-						<UserProfile />
+				<CardContent className="flex flex-col gap-4 h-[calc(100%-3.5rem)]">
+					<UserProfile />
+					<div className="pt-2 border-t" />
+					<div className="space-y-2">
+						<div className="text-xs font-medium text-gray-700">Apps</div>
+						<Link className="text-sm underline block" href="/chat">Chat</Link>
+						<Link className="text-sm underline block" href="/feedback">Feedback</Link>
 					</div>
 				</CardContent>
 			</Card>
