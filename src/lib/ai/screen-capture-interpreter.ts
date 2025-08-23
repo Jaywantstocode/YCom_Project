@@ -1,4 +1,6 @@
-import OpenAI from 'openai';
+import { generateObject } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
 import { getDefaultModel, getModelConfig } from './lm-models';
 
 // AI analysis input parameters (all optional)
@@ -19,33 +21,19 @@ export interface AnalysisResult {
   error?: string;
 }
 
-// JSON schema for structured output
-const analysisSchema = {
-  type: "object",
-  properties: {
-    description: {
-      type: "string",
-      description: "Concise summary of what is displayed on the screen"
-    },
-    insights: {
-      type: "array",
-      items: {
-        type: "string"
-      },
-      description: "List of specific findings and observations from the screen analysis"
-    }
-  },
-  required: ["description", "insights"],
-  additionalProperties: false
-} as const;
+// Zod schema for structured output
+const AnalysisSchema = z.object({
+  description: z.string().describe("Concise summary of what is displayed on the screen"),
+  insights: z.array(z.string()).describe("List of specific findings and observations from the screen analysis")
+});
 
-// Initialize OpenAI client
-function getOpenAIClient(): OpenAI {
+
+// Check if API key is configured
+function checkAPIKey(): void {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is not configured');
   }
-  return new OpenAI({ apiKey });
 }
 
 // Encode image to Base64 format
@@ -55,7 +43,7 @@ function encodeImageToBase64(imageData: Buffer): string {
 
 /**
  * Main AI analysis function
- * Analyzes screen capture using OpenAI API with image, audio, and timestamp
+ * Analyzes screen capture using Vercel AI SDK with image, audio, and timestamp
  */
 export async function analyzeScreenCapture(input: AnalysisInput): Promise<AnalysisResult> {
   const timestamp = input.timestamp || Date.now();
@@ -74,7 +62,7 @@ export async function analyzeScreenCapture(input: AnalysisInput): Promise<Analys
       };
     }
 
-    const openai = getOpenAIClient();
+    checkAPIKey();
     
     // Prepare image data
     let imageUrl: string;
@@ -89,9 +77,9 @@ export async function analyzeScreenCapture(input: AnalysisInput): Promise<Analys
     const modelConfig = getModelConfig(modelId);
     console.log('🤖 Using model:', { modelId, name: modelConfig?.name });
 
-    // Analyze image using OpenAI Vision API with structured output
-    const response = await openai.chat.completions.create({
-      model: modelId,
+    // Use generateObject for structured output
+    const result = await generateObject({
+      model: openai(modelId),
       messages: [
         {
           role: "user",
@@ -108,49 +96,27 @@ export async function analyzeScreenCapture(input: AnalysisInput): Promise<Analys
 Please respond concisely in English.`
             },
             {
-              type: "image_url",
-              image_url: {
-                url: imageUrl,
-                detail: "low" // Use low resolution for cost optimization
-              }
+              type: "image",
+              image: imageUrl
             }
           ]
         }
       ],
-      max_completion_tokens: Math.min(modelConfig?.maxTokens || 4096, 2000),
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "screen_analysis",
-          schema: analysisSchema
-        }
-      }
+      schema: AnalysisSchema,
+      temperature: 0.7,
     });
 
-    console.log('🔍 OpenAI API response structure:', JSON.stringify(response, null, 2));
-    
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      console.log('❌ Response choices:', response.choices);
-      console.log('❌ First choice:', response.choices[0]);
-      throw new Error('Empty response from OpenAI API');
-    }
-
-    // Parse structured JSON response
-    let analysisData;
-    try {
-      analysisData = JSON.parse(content);
-    } catch (parseError) {
-      console.error('❌ Failed to parse JSON response:', content);
-      throw new Error('Invalid JSON response from OpenAI API');
-    }
+    console.log('🔍 AI response:', {
+      object: result.object,
+      usage: result.usage
+    });
 
     return {
       success: true,
       timestamp,
       analysis: {
-        description: analysisData.description || 'Screen analysis completed',
-        insights: analysisData.insights || []
+        description: result.object.description || 'Screen analysis completed',
+        insights: result.object.insights || []
       }
     };
 

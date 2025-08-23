@@ -1,6 +1,5 @@
 /**
  * Language Model configurations and enums
- * Centralized model management for AI analysis
  */
 
 // OpenAI model identifiers
@@ -18,10 +17,18 @@ export enum AnthropicModel {
   CLAUDE_3_HAIKU = "claude-3-haiku-20240307",
 }
 
+// Google model identifiers
+export enum GoogleModel {
+  GEMINI_2_0_FLASH = "gemini-2.0-flash-exp",
+  GEMINI_1_5_FLASH = "gemini-1.5-flash",
+  GEMINI_1_5_PRO = "gemini-1.5-pro",
+}
+
 // Model provider types
 export enum ModelProvider {
   OPENAI = "openai",
   ANTHROPIC = "anthropic",
+  GOOGLE = "google",
 }
 
 // Model configuration interface
@@ -44,7 +51,7 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     name: "GPT-5",
     description: "The best model for coding and agentic tasks across domains",
     supportsVision: true,
-    maxTokens: 8192,
+    maxTokens: 32768,
     costPerToken: 0.005,
   },
   [OpenAIModel.GPT_5_MINI]: {
@@ -53,7 +60,7 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     name: "GPT-5 mini",
     description: "A faster, cost-efficient version of GPT-5 for well-defined tasks",
     supportsVision: true,
-    maxTokens: 4096,
+    maxTokens: 16384,
     costPerToken: 0.001,
   },
   [OpenAIModel.GPT_5_NANO]: {
@@ -62,7 +69,7 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     name: "GPT-5 nano",
     description: "Fastest, most cost-efficient version of GPT-5",
     supportsVision: true,
-    maxTokens: 4096,
+    maxTokens: 8192,
     costPerToken: 0.0005,
   },
   [AnthropicModel.CLAUDE_3_5_SONNET]: {
@@ -92,6 +99,34 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     maxTokens: 4096,
     costPerToken: 0.0125,
   },
+  // Google Gemini models
+  [GoogleModel.GEMINI_2_0_FLASH]: {
+    id: GoogleModel.GEMINI_2_0_FLASH,
+    provider: ModelProvider.GOOGLE,
+    name: "Gemini 2.0 Flash",
+    description: "Fast and efficient Google model",
+    supportsVision: true,
+    maxTokens: 8192,
+    costPerToken: 0.0001,
+  },
+  [GoogleModel.GEMINI_1_5_FLASH]: {
+    id: GoogleModel.GEMINI_1_5_FLASH,
+    provider: ModelProvider.GOOGLE,
+    name: "Gemini 1.5 Flash",
+    description: "Fast Google model for general tasks",
+    supportsVision: true,
+    maxTokens: 8192,
+    costPerToken: 0.00015,
+  },
+  [GoogleModel.GEMINI_1_5_PRO]: {
+    id: GoogleModel.GEMINI_1_5_PRO,
+    provider: ModelProvider.GOOGLE,
+    name: "Gemini 1.5 Pro",
+    description: "Advanced Google model",
+    supportsVision: true,
+    maxTokens: 8192,
+    costPerToken: 0.0005,
+  },
 };
 
 // Default models for different use cases
@@ -99,7 +134,9 @@ export const DEFAULT_MODELS = {
   VISION_ANALYSIS: OpenAIModel.GPT_5,         // Best model for coding and agentic tasks
   FAST_ANALYSIS: OpenAIModel.GPT_5_MINI,      // Faster, cost-efficient version
   FASTEST_ANALYSIS: OpenAIModel.GPT_5_NANO,   // Fastest, most cost-efficient
+  PRODUCTIVITY_ANALYSIS: OpenAIModel.GPT_5,   // Best model for productivity analysis
   COST_EFFECTIVE: AnthropicModel.CLAUDE_3_HAIKU, // Cheapest option (non-OpenAI)
+  AGENT: GoogleModel.GEMINI_2_0_FLASH,        // Default for agent tasks
 } as const;
 
 // Utility functions
