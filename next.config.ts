@@ -6,6 +6,17 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  // Configure image domains for Next.js Image component
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'ooeziwqlhmevflojdfhu.supabase.co',
+        port: '',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
   // Ignore problematic directories
   webpack: (config, { isServer }) => {
     // Ignore system directories that might cause issues

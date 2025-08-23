@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { type User, type Session, type AuthError } from '@supabase/supabase-js';
 import { getBrowserSupabaseClient } from '@/lib/supabase/client';
 import { type Tables } from '@/lib/supabase/database.types';
@@ -35,7 +35,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const supabase = typeof window !== 'undefined' ? getBrowserSupabaseClient() : null;
+  const supabase = useMemo(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return getBrowserSupabaseClient();
+    } catch (error) {
+      console.error('Failed to initialize Supabase client:', error);
+      return null;
+    }
+  }, []);
 
   // Local fallback for session persistence to smooth reloads
   const LOCAL_SESSION_KEY = 'ycom.auth.session.v1';
@@ -106,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 認証状態の変化を監視
   useEffect(() => {
     if (!supabase) {
+      console.log('Supabase client not available, setting loading to false');
       setLoading(false);
       return;
     }
@@ -113,57 +122,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     const getInitialSession = async () => {
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      // Fallback to locally cached session to avoid logged-out flash on reload
-      let sess = initialSession ?? null;
-      if (!sess) {
-        // Try our own cached session first
-        const cached = loadLocalSession();
-        if (cached?.access_token && cached?.refresh_token) {
-          try {
-            const { data } = await supabase.auth.setSession({
-              access_token: (cached as unknown as { access_token: string }).access_token,
-              refresh_token: (cached as unknown as { refresh_token: string }).refresh_token,
-            });
-            if (data.session) {
-              sess = data.session;
-            }
-          } catch {}
-        }
-      }
-      if (!sess) {
-        // Fallback to Supabase SDK's own stored token if present
-        const stored = loadSupabaseStoredTokens();
-        if (stored) {
-          try {
-            const { data } = await supabase.auth.setSession({
-              access_token: stored.access_token,
-              refresh_token: stored.refresh_token,
-            });
-            if (data.session) {
-              sess = data.session;
-            }
-          } catch {}
-        }
-      }
-      
-      if (mounted) {
-        setSession(sess);
-        setUser(sess?.user ?? null);
+      try {
+        console.log('Getting initial session...');
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
-        if (sess?.user) {
-          const userProfile = await fetchProfile(sess.user.id);
-          setProfile(userProfile);
+        if (error) {
+          console.error('Error getting initial session:', error);
+          if (mounted) {
+            setLoading(false);
+          }
+          return;
         }
         
-        setLoading(false);
+        console.log('Initial session:', initialSession?.user?.email || 'No session');
+        
+        // Fallback to locally cached session to avoid logged-out flash on reload
+        let sess = initialSession ?? null;
+        if (!sess) {
+          // Try our own cached session first
+          const cached = loadLocalSession();
+          if (cached?.access_token && cached?.refresh_token) {
+            try {
+              const { data } = await supabase.auth.setSession({
+                access_token: (cached as unknown as { access_token: string }).access_token,
+                refresh_token: (cached as unknown as { refresh_token: string }).refresh_token,
+              });
+              if (data.session) {
+                sess = data.session;
+                console.log('Restored session from cache');
+              }
+            } catch (error) {
+              console.error('Error restoring cached session:', error);
+            }
+          }
+        }
+        if (!sess) {
+          // Fallback to Supabase SDK's own stored token if present
+          const stored = loadSupabaseStoredTokens();
+          if (stored) {
+            try {
+              const { data } = await supabase.auth.setSession({
+                access_token: stored.access_token,
+                refresh_token: stored.refresh_token,
+              });
+              if (data.session) {
+                sess = data.session;
+                console.log('Restored session from Supabase storage');
+              }
+            } catch (error) {
+              console.error('Error restoring Supabase stored session:', error);
+            }
+          }
+        }
+        
+        if (mounted) {
+          setSession(sess);
+          setUser(sess?.user ?? null);
+          
+          if (sess?.user) {
+            console.log('Fetching profile for user:', sess.user.email);
+            const userProfile = await fetchProfile(sess.user.id);
+            setProfile(userProfile);
+          }
+          
+          console.log('Initial session setup complete');
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Unexpected error in getInitialSession:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     getInitialSession();
 
+    // フェイルセーフ: 10秒後にローディングを強制的に解除
+    const fallbackTimer = setTimeout(() => {
+      if (mounted) {
+        console.warn('Auth initialization timed out, setting loading to false');
+        setLoading(false);
+      }
+    }, 10000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         if (!mounted) return;
 
         setSession(session);
@@ -177,14 +222,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(null);
         }
 
-        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-          setLoading(false);
-        }
+        // すべてのイベントでローディングを解除
+        setLoading(false);
       }
     );
 
     return () => {
       mounted = false;
+      clearTimeout(fallbackTimer);
       subscription.unsubscribe();
     };
   }, [supabase, fetchProfile]);
