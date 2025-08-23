@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_logs: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          embedding: string | null
+          ended_at: string | null
+          id: string
+          parent_id: string | null
+          source_log_ids: string[] | null
+          started_at: string
+          summary: string | null
+          tags: string[] | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          embedding?: string | null
+          ended_at?: string | null
+          id?: string
+          parent_id?: string | null
+          source_log_ids?: string[] | null
+          started_at?: string
+          summary?: string | null
+          tags?: string[] | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          embedding?: string | null
+          ended_at?: string | null
+          id?: string
+          parent_id?: string | null
+          source_log_ids?: string[] | null
+          started_at?: string
+          summary?: string | null
+          tags?: string[] | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_logs_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "action_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       images: {
         Row: {
           action_log_id: string | null
@@ -56,48 +109,7 @@ export type Database = {
             foreignKeyName: "images_action_log_id_fkey"
             columns: ["action_log_id"]
             isOneToOne: true
-            referencedRelation: "user_action_log"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      log_summary: {
-        Row: {
-          action_log_id: string
-          created_at: string | null
-          embedding: string | null
-          id: string
-          structured: Json | null
-          summary_text: string | null
-          tags: string[] | null
-          user_id: string
-        }
-        Insert: {
-          action_log_id: string
-          created_at?: string | null
-          embedding?: string | null
-          id?: string
-          structured?: Json | null
-          summary_text?: string | null
-          tags?: string[] | null
-          user_id: string
-        }
-        Update: {
-          action_log_id?: string
-          created_at?: string | null
-          embedding?: string | null
-          id?: string
-          structured?: Json | null
-          summary_text?: string | null
-          tags?: string[] | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "log_summary_action_log_id_fkey"
-            columns: ["action_log_id"]
-            isOneToOne: true
-            referencedRelation: "user_action_log"
+            referencedRelation: "action_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -162,7 +174,7 @@ export type Database = {
             foreignKeyName: "recommendations_log_summary_id_fkey"
             columns: ["log_summary_id"]
             isOneToOne: false
-            referencedRelation: "log_summary"
+            referencedRelation: "action_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -194,39 +206,6 @@ export type Database = {
           tags?: string[] | null
           title?: string | null
           url?: string | null
-        }
-        Relationships: []
-      }
-      user_action_log: {
-        Row: {
-          action_type: string | null
-          created_at: string | null
-          ended_at: string | null
-          id: string
-          payload: Json | null
-          source: string | null
-          started_at: string
-          user_id: string
-        }
-        Insert: {
-          action_type?: string | null
-          created_at?: string | null
-          ended_at?: string | null
-          id?: string
-          payload?: Json | null
-          source?: string | null
-          started_at: string
-          user_id: string
-        }
-        Update: {
-          action_type?: string | null
-          created_at?: string | null
-          ended_at?: string | null
-          id?: string
-          payload?: Json | null
-          source?: string | null
-          started_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -272,7 +251,7 @@ export type Database = {
             foreignKeyName: "videos_action_log_id_fkey"
             columns: ["action_log_id"]
             isOneToOne: false
-            referencedRelation: "user_action_log"
+            referencedRelation: "action_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -285,6 +264,22 @@ export type Database = {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      get_similar_tool_knowledge: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          source_id: string
+        }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          similarity: number
+          tags: string[]
+          title: string
+          url: string
+        }[]
       }
       halfvec_avg: {
         Args: { "": number[] }
@@ -338,6 +333,58 @@ export type Database = {
         Args: { "": string } | { "": unknown } | { "": unknown }
         Returns: unknown
       }
+      search_log_summary_semantic: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+          user_id_filter: string
+        }
+        Returns: {
+          action_log_id: string
+          created_at: string
+          id: string
+          similarity: number
+          structured: Json
+          summary_text: string
+          tags: string[]
+          user_id: string
+        }[]
+      }
+      search_tool_knowledge_hybrid: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+          query_text: string
+        }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          search_type: string
+          similarity: number
+          tags: string[]
+          title: string
+          url: string
+        }[]
+      }
+      search_tool_knowledge_semantic: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          created_at: string
+          id: string
+          similarity: number
+          tags: string[]
+          title: string
+          url: string
+        }[]
+      }
       sparsevec_out: {
         Args: { "": unknown }
         Returns: unknown
@@ -373,56 +420,6 @@ export type Database = {
       vector_typmod_in: {
         Args: { "": unknown[] }
         Returns: number
-      }
-      search_tool_knowledge_semantic: {
-        Args: {
-          query_embedding: string
-          match_threshold?: number
-          match_count?: number
-        }
-        Returns: {
-          id: string
-          title: string | null
-          url: string | null
-          tags: string[] | null
-          content: string | null
-          similarity: number
-          created_at: string | null
-        }[]
-      }
-      search_log_summary_semantic: {
-        Args: {
-          query_embedding: string
-          user_id_filter: string
-          match_threshold?: number
-          match_count?: number
-        }
-        Returns: {
-          id: string
-          user_id: string
-          action_log_id: string
-          summary_text: string | null
-          structured: unknown | null
-          tags: string[] | null
-          similarity: number
-          created_at: string | null
-        }[]
-      }
-      get_similar_tool_knowledge: {
-        Args: {
-          source_id: string
-          match_threshold?: number
-          match_count?: number
-        }
-        Returns: {
-          id: string
-          title: string | null
-          url: string | null
-          tags: string[] | null
-          content: string | null
-          similarity: number
-          created_at: string | null
-        }[]
       }
     }
     Enums: {

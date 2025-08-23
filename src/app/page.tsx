@@ -17,7 +17,7 @@ export default function Home() {
           <Link href="/knowledge">
             <Button variant="outline" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
-              ナレッジベース
+              Knowledge Base
             </Button>
           </Link>
         </div>
@@ -29,9 +29,7 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <div className="fixed right-4 bottom-4 z-20">
-        <UserProfile />
-      </div>
+      {/* UserProfile moved to sidebar bottom */}
     </div>
   );
 }

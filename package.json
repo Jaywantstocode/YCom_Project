@@ -14,7 +14,8 @@
     "debug-analyzer": "tsx scripts/debug-productivity-analyzer.ts",
     "analyze": "tsx scripts/debug-analyzer.ts",
     "analyze-and-save": "tsx scripts/debug-analyzer-with-save.ts",
-    "import:tools": "tsx scripts/import-tools.ts"
+    "import:tools": "tsx scripts/import-tools.ts",
+    "import:knowledge": "tsx scripts/import-knowledge-from-csv.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.6",

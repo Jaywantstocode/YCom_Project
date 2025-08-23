@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useKnowledgeSearch } from '@/hooks/useKnowledge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -38,11 +38,26 @@ export function KnowledgeSearch({
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
 
+  // Debounced query state
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debounceMs = 600; // longer debounce per request
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, debounceMs);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [searchQuery]);
+
   const searchParams: KnowledgeSearchParams = useMemo(() => ({
-    query: searchQuery.trim() || undefined,
+    query: debouncedQuery || undefined,
     tags: selectedTags.length > 0 ? selectedTags : undefined,
     limit: maxResults,
-  }), [searchQuery, selectedTags, maxResults]);
+  }), [debouncedQuery, selectedTags, maxResults]);
 
   const { data: searchResults, loading, error } = useKnowledgeSearch(searchParams);
 
@@ -83,12 +98,12 @@ export function KnowledgeSearch({
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Search className="h-5 w-5" />
-              ナレッジ検索
+              Knowledge Search
             </CardTitle>
             {showCreateButton && (
               <Button onClick={() => setShowForm(true)} size="sm">
                 <Plus className="h-4 w-4 mr-2" />
-                新規作成
+                New
               </Button>
             )}
           </div>
@@ -98,7 +113,7 @@ export function KnowledgeSearch({
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="ナレッジを検索..."
+              placeholder="Search knowledge..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -107,7 +122,7 @@ export function KnowledgeSearch({
 
           {/* Tag Filters */}
           <div className="space-y-2">
-            <div className="text-sm font-medium text-gray-700">カテゴリで絞り込み:</div>
+            <div className="text-sm font-medium text-gray-700">Filter by category:</div>
             <div className="flex flex-wrap gap-2">
               {KNOWLEDGE_TAGS.CATEGORIES.map((tag) => (
                 <Badge
@@ -126,10 +141,10 @@ export function KnowledgeSearch({
           {/* Active Filters */}
           {(searchQuery || selectedTags.length > 0) && (
             <div className="flex items-center gap-2">
-              <div className="text-sm text-gray-500">フィルタ:</div>
+              <div className="text-sm text-gray-500">Filters:</div>
               {searchQuery && (
                 <Badge variant="secondary">
-                  検索: {searchQuery}
+                  Query: {searchQuery}
                 </Badge>
               )}
               {selectedTags.map((tag) => (
@@ -138,7 +153,7 @@ export function KnowledgeSearch({
                 </Badge>
               ))}
               <Button variant="ghost" size="sm" onClick={clearFilters}>
-                クリア
+                Clear
               </Button>
             </div>
           )}
@@ -164,7 +179,7 @@ export function KnowledgeSearch({
         {error && (
           <Card>
             <CardContent className="p-4 text-center text-red-600">
-              エラーが発生しました: {error}
+              Error: {error}
             </CardContent>
           </Card>
         )}
@@ -173,8 +188,8 @@ export function KnowledgeSearch({
           <Card>
             <CardContent className="p-8 text-center text-gray-500">
               <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <div className="text-lg font-medium mb-2">ナレッジが見つかりませんでした</div>
-              <div className="text-sm">検索条件を変更してみてください</div>
+              <div className="text-lg font-medium mb-2">No knowledge found</div>
+              <div className="text-sm">Try adjusting your search</div>
             </CardContent>
           </Card>
         )}
@@ -182,7 +197,7 @@ export function KnowledgeSearch({
         {!loading && !error && searchResults && searchResults.length > 0 && (
           <>
             <div className="text-sm text-gray-600">
-              {searchResults.length} 件のナレッジが見つかりました
+              {searchResults.length} results found
             </div>
             
             <div className="space-y-4">
@@ -199,7 +214,7 @@ export function KnowledgeSearch({
                       {/* Header */}
                       <div className="flex items-start justify-between">
                         <h3 className="font-semibold text-lg line-clamp-1">
-                          {item.title || '無題'}
+                          {item.title || 'Untitled'}
                         </h3>
                         <div className="flex items-center gap-2 ml-4">
                           {item.similarity !== undefined && item.similarity > 0 && (
@@ -213,7 +228,7 @@ export function KnowledgeSearch({
                           )}
                           {item.search_type === 'semantic' && (
                             <Badge variant="outline" className="text-xs">
-                              AI検索
+                              AI
                             </Badge>
                           )}
                         </div>

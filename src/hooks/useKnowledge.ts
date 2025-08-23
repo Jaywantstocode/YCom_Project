@@ -2,7 +2,7 @@
 
 import useSWR, { mutate } from 'swr';
 import { getBrowserSupabaseClient } from '@/lib/supabase/client';
-import { generateKnowledgeEmbedding, generateSearchEmbedding } from '@/lib/ai/embedding';
+import { generateKnowledgeEmbedding } from '@/lib/ai/embedding';
 import { 
   type ToolKnowledge, 
   type ToolKnowledgeInsert, 
@@ -26,84 +26,23 @@ const CACHE_KEYS = {
 // Fetcher for knowledge search
 const knowledgeSearchFetcher = async (params?: KnowledgeSearchParams): Promise<ToolKnowledgeSearchResult[]> => {
   try {
-    // If there's a search query, try semantic search first
-    if (params?.query && params.query.trim().length >= SEARCH_DEFAULTS.MIN_QUERY_LENGTH) {
-      try {
-        // Generate embedding for search query
-        const searchEmbedding = await generateSearchEmbedding(params.query);
-
-        // Use semantic search function
-        const { data: semanticData, error: semanticError } = await supabase.rpc(
-          'search_tool_knowledge_semantic',
-          {
-            query_embedding: searchEmbedding,
-            match_threshold: params.threshold || SEARCH_DEFAULTS.SIMILARITY_THRESHOLD,
-            match_count: params.limit || SEARCH_DEFAULTS.MAX_RESULTS,
-          }
-        );
-
-        if (!semanticError && semanticData && Array.isArray(semanticData) && semanticData.length > 0) {
-          return semanticData.map((item) => ({
-            ...item,
-            embedding: null, // SQL function doesn't return embedding for performance
-            search_type: 'semantic' as const,
-          }));
-        }
-      } catch (embeddingError) {
-        console.warn('Semantic search failed, falling back to text search:', embeddingError);
-      }
-
-      // Fallback to text search
-      let query = supabase
-        .from('tool_knowledge')
-        .select('*')
-        .or(
-          `title.ilike.%${params.query}%,content.ilike.%${params.query}%,tags.cs.{${params.query}}`
-        )
-        .order('created_at', { ascending: false });
-
-      if (params.tags && params.tags.length > 0) {
-        query = query.overlaps('tags', params.tags);
-      }
-
-      if (params.limit) {
-        query = query.limit(params.limit);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      return (data || []).map((item: ToolKnowledge) => ({
-        ...item,
-        similarity: 0.5, // Default similarity for text search
-        search_type: 'text' as const,
-      }));
+    const res = await fetch('/api/knowledge/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: params?.query,
+        tags: params?.tags,
+        limit: params?.limit || SEARCH_DEFAULTS.MAX_RESULTS,
+        threshold: params?.threshold || SEARCH_DEFAULTS.SIMILARITY_THRESHOLD,
+      }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Search failed');
     }
-
-    // No search query - return all knowledge
-    let query = supabase
-      .from('tool_knowledge')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (params?.tags && params.tags.length > 0) {
-      query = query.overlaps('tags', params.tags);
-    }
-
-    if (params?.limit) {
-      query = query.limit(params.limit);
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    return (data || []).map((item: ToolKnowledge) => ({
-      ...item,
-      similarity: 0,
-      search_type: undefined,
-    }));
+    const json = await res.json();
+    const data = (json?.data || []) as ToolKnowledge[];
+    return data as unknown as ToolKnowledgeSearchResult[];
   } catch (searchError) {
     console.error('Error in knowledge search:', searchError);
     throw searchError;

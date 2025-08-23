@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { UserProfile } from '@/components/UserProfile';
 
 function formatTime(ts: number) {
 	const d = new Date(ts);
@@ -25,9 +26,9 @@ export default function SidebarSessions() {
 					<CardTitle className="text-base">Sessions</CardTitle>
 					<Button variant="ghost" size="sm" onClick={clearAll}>Clear</Button>
 				</CardHeader>
-				<CardContent className="flex flex-col gap-3">
+				<CardContent className="flex flex-col gap-3 h-[calc(100%-3.5rem)]">
 					<Button onClick={startSession}>New Session</Button>
-					<ScrollArea className="h-[calc(100vh-16rem)]">
+					<ScrollArea className="flex-1">
 						<div className="flex flex-col gap-2 pr-2">
 							{items.map((s) => (
 								<div key={s.id} className={`p-3 rounded-lg border ${s.id === activeSessionId ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}>
@@ -42,6 +43,9 @@ export default function SidebarSessions() {
 					{hasActive && (
 						<Button variant="secondary" onClick={stopSession}>Stop</Button>
 					)}
+					<div className="mt-auto pt-3 border-t">
+						<UserProfile />
+					</div>
 				</CardContent>
 			</Card>
 		</aside>
