@@ -23,7 +23,7 @@ export interface AnalysisResult {
     insights: string[];
   };
   error?: string;
-  summaryId?: string; // ID of the created log summary record
+  actionLogId?: string; // ID of the created or updated action log record
 }
 
 // Zod schema for structured output
@@ -46,12 +46,12 @@ function encodeImageToBase64(imageData: Buffer): string {
   return `data:image/png;base64,${imageData.toString('base64')}`;
 }
 
-// Type definition for the log summary record
-type LogSummaryInsert = Database['public']['Tables']['log_summary']['Insert'];
+// Type definition for action_logs table
+type ActionLogInsert = Database['public']['Tables']['action_logs']['Insert'];
 
 /**
- * Save analysis result to Supabase database
- * Stores the analysis data in the log_summary table
+ * Save screen capture analysis results to action_logs table
+ * Stores description in summary field and other data in details field
  */
 async function saveAnalysisResultToDatabase(
   analysisData: { description: string; insights: string[] },
@@ -68,22 +68,23 @@ async function saveAnalysisResultToDatabase(
       .filter(insight => insight.length > 0)
       .slice(0, 10); // Limit to 10 tags
 
-    const logSummaryData: LogSummaryInsert = {
-      action_log_id: actionLogId,
+    // Action log data structure: description in summary, other data in details
+    const actionLogData: ActionLogInsert = {
+      id: actionLogId,
       user_id: userId,
-      summary_text: analysisData.description,
-      structured: {
-        description: analysisData.description,
-        insights: analysisData.insights,
-        timestamp: timestamp,
-        type: 'screen_capture_analysis'
+      type: 'screen_capture_analyze',
+      summary: analysisData.description,
+      details: {
+        insights: analysisData.insights
       },
-      tags: tags.length > 0 ? tags : null
+      tags: tags.length > 0 ? tags : null,
+      started_at: new Date(timestamp).toISOString(),
+      ended_at: new Date().toISOString()
     };
 
     const { data, error } = await supabase
-      .from('log_summary')
-      .insert(logSummaryData)
+      .from('action_logs')
+      .upsert(actionLogData)
       .select('id')
       .single();
 
@@ -216,7 +217,7 @@ export async function analyzeAndSaveScreenCapture(input: AnalysisInput): Promise
     // Save to database if userId and actionLogId are provided
     if (input.userId && input.actionLogId) {
       try {
-        const summaryId = await saveAnalysisResultToDatabase(
+        const actionLogId = await saveAnalysisResultToDatabase(
           analysisResult.analysis,
           input.userId,
           input.actionLogId,
@@ -225,7 +226,7 @@ export async function analyzeAndSaveScreenCapture(input: AnalysisInput): Promise
         
         return {
           ...analysisResult,
-          summaryId
+          actionLogId
         };
       } catch (dbError) {
         console.error('❌ Database save failed, returning analysis without saving:', dbError);

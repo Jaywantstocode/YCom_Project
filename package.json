@@ -11,9 +11,9 @@
     "start": "next start",
     "lint": "eslint",
     "extract-frames": "node scripts/video-to-frames.js",
-    "debug-analyzer": "tsx scripts/debug-productivity-analyzer.ts",
-    "analyze": "tsx scripts/debug-analyzer.ts",
-    "analyze-and-save": "tsx scripts/debug-analyzer-with-save.ts",
+    "productivity-analyzer": "tsx scripts/debug-productivity-analyzer.ts",
+    "screen-capture-analyze": "tsx scripts/screen-capture-analyze.ts",
+    "screen-capture-analyze-and-save": "tsx scripts/debug-screen-capture-analyze-with-save.ts",
     "import:tools": "tsx scripts/import-tools.ts",
     "import:knowledge": "tsx scripts/import-knowledge-from-csv.ts"
   },

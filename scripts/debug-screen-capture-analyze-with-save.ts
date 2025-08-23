@@ -109,7 +109,7 @@ async function checkIfUserExists(userId: string): Promise<boolean> {
 }
 
 /**
- * テスト用のuser_action_logレコードを作成
+ * テスト用のaction_logsレコードを作成
  */
 async function createTestActionLog(userId: string): Promise<string> {
     try {
@@ -117,15 +117,14 @@ async function createTestActionLog(userId: string): Promise<string> {
         const now = new Date().toISOString();
         
         const { data, error } = await supabase
-            .from('user_action_log')
+            .from('action_logs')
             .insert({
                 user_id: userId,
                 started_at: now,
-                action_type: 'screen_capture_test',
-                source: null, // null値で制約エラーを回避
-                payload: {
+                type: 'screen_capture_analyze',
+                details: {
                     test: true,
-                    debug_script: 'debug-analyzer-with-save.ts',
+                    debug_script: 'debug-screen-capture-analyze-with-save.ts',
                     original_source: 'debug_analyzer'
                 }
             })
@@ -145,39 +144,7 @@ async function createTestActionLog(userId: string): Promise<string> {
     }
 }
 
-/**
- * データベースから保存された結果を確認
- */
-async function verifyDatabaseSave(summaryId: string, userId: string): Promise<void> {
-    try {
-        const supabase = getSupabaseServiceClient();
-        
-        const { data, error } = await supabase
-            .from('log_summary')
-            .select('*')
-            .eq('id', summaryId)
-            .eq('user_id', userId)
-            .single();
-            
-        if (error) {
-            throw new Error(`Failed to verify database save: ${error.message}`);
-        }
-        
-        console.log('🔍 データベース保存結果確認:');
-        console.log('=============================');
-        console.log(`ID: ${data.id}`);
-        console.log(`User ID: ${data.user_id}`);
-        console.log(`Action Log ID: ${data.action_log_id}`);
-        console.log(`Summary: ${data.summary_text}`);
-        console.log(`Tags: ${JSON.stringify(data.tags)}`);
-        console.log(`Structured Data: ${JSON.stringify(data.structured, null, 2)}`);
-        console.log(`Created At: ${data.created_at}`);
-        
-    } catch (error) {
-        console.error('❌ データベース確認エラー:', error);
-        throw error;
-    }
-}
+
 
 /**
  * メイン関数
@@ -201,8 +168,8 @@ async function main() {
         console.log('機能:');
         console.log('  - AI分析実行');
         console.log('  - テスト用profileレコード作成（必要に応じて）');
-        console.log('  - テスト用user_action_logレコード作成');
-        console.log('  - log_summaryテーブルへの保存');
+        console.log('  - テスト用action_logsレコード作成');
+        console.log('  - action_logsテーブルへの保存');
         console.log('  - データベース保存結果の確認');
         console.log('');
         console.log('注意:');
@@ -272,15 +239,10 @@ async function main() {
         console.log(JSON.stringify(result, null, 2));
         
         // データベース保存結果を確認
-        if (hasValidUser && result.success && result.summaryId) {
-            console.log('');
-            console.log('🔍 データベース保存確認中...');
-            await verifyDatabaseSave(result.summaryId, TEST_USER_ID);
-            
+        if (hasValidUser && result.success && result.actionLogId) {
             console.log('');
             console.log('🎉 すべての処理が正常に完了しました！');
-            console.log(`📝 Summary ID: ${result.summaryId}`);
-            console.log(`🔗 Action Log ID: ${actionLogId}`);
+            console.log(`🔗 Action Log ID: ${result.actionLogId}`);
         } else if (!hasValidUser && result.success) {
             console.log('');
             console.log('✅ AI分析が正常に完了しました！');

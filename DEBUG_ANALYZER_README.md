@@ -20,20 +20,20 @@ npm run extract-frames <video-file-path>
 ## Usage
 
 ```bash
-npm run analyze [image-index]           # AI analysis only
-npm run analyze-and-save [image-index]  # AI analysis + Supabase save
+npm run screen-capture-analyze [image-index]           # AI analysis only
+npm run screen-capture-analyze-and-save [image-index]  # AI analysis + Supabase save
 ```
 
 ## Examples
 
 ```bash
 # Analyze default image (index 10)
-npm run analyze
+npm run screen-capture-analyze
 
 # Analyze specific images
-npm run analyze 1
-npm run analyze 25
-npm run analyze 100
+npm run screen-capture-analyze 1
+npm run screen-capture-analyze 25
+npm run screen-capture-analyze 100
 ```
 
 ## Output
