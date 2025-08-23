@@ -64,17 +64,9 @@ const setPlanParams = z.object({
 });
 
 // Core function
-const setPlanCore = async (plan: z.infer<typeof setPlanParams>) => {
-  console.log('📋 Plan set successfully');
-  console.log('🔍 Suggested searches:', plan.productHuntSearch.suggestedSearches);
-  console.log('📊 Productivity score:', plan.summary.productivityScore);
-  console.log('🎯 Priority recommendations:', plan.recommendations.filter(r => r.priority === 'critical' || r.priority === 'high').length);
-  
+const setPlanCore = async (_plan: z.infer<typeof setPlanParams>) => {
   return {
-    success: true,
-    message: 'Productivity improvement plan has been set',
-    searchQueries: plan.productHuntSearch.suggestedSearches,
-    plan: plan
+    success: true
   };
 };
 
