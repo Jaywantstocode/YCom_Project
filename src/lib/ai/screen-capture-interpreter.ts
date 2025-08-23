@@ -66,15 +66,13 @@ async function saveAnalysisResultToDatabase(
       .filter(word => word.length > 3)
       .slice(0, 5); // 最大5個のタグ
 
-    // Action log data structure: サマリのみ
+    // Action log data structure: サマリのみ、detailsは空白
     const actionLogData: ActionLogInsert = {
       id: actionLogId,
       user_id: userId,
       type: 'screen_capture_analyze',
       summary: analysisData.description,
-      details: {
-        capture_type: 'screen_summary'
-      },
+      details: null,
       tags: tags.length > 0 ? tags : null,
       started_at: new Date(timestamp).toISOString(),
       ended_at: new Date().toISOString()
