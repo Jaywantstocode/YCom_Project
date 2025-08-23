@@ -65,11 +65,10 @@ async function summarizeUserRecentLogs(userId: string, sinceISO: string): Promis
 		const time = new Date(l.created_at ?? Date.now()).toISOString().slice(11, 16);
 		return `- [${time}] ${l.type}: ${l.summary}`;
 	});
-
 	const prompt = [
-		"以下は過去10分に新しく記録されたユーザーログです。",
-		"重複や枝葉を省き、重要点だけを最大5項目で日本語要約してください。",
-		"1文は短く、できるだけ具体的に。最後に全体の一言サマリを1行。",
+		"The following are newly recorded user logs from the past 10 minutes.",
+		"Please summarize in English, focusing only on important points with a maximum of 5 items, removing duplicates and minor details.",
+		"Keep sentences short and as specific as possible. End with a one-line overall summary.",
 		"",
 		bulletLines.join("\n"),
 	].join("\n");

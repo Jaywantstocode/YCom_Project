@@ -16,7 +16,10 @@ export default function CapturePanel() {
 				</div>
 				<div className="rounded-xl border border-gray-200 bg-white/70">
 					<div className="px-6 pt-4">
-						<h3 className="text-base font-semibold">Logs</h3>
+						<div className="flex items-center gap-2">
+							<h3 className="text-base font-semibold">Live Logs</h3>
+							<div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
+						</div>
 						<p className="text-sm text-gray-600">Real-time action logs from captures and analysis</p>
 					</div>
 					<div className="px-2 pb-2">

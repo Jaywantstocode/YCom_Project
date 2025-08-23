@@ -5,7 +5,6 @@ import { useAuth } from "@/context/AuthContext";
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type ActionLogRow = Database["public"]["Tables"]["action_logs"]["Row"];
 type ImageRow = Database["public"]["Tables"]["images"]["Row"];
@@ -79,7 +78,7 @@ export default function ActionLogViewer() {
       if (!supabase) return;
       const { data: logs, error: logErr } = await supabase
         .from("action_logs")
-        .select("id, created_at, type, summary")
+        .select("*")
         .eq("user_id", user!.id)
         .gte("created_at", startISO)
         .lte("created_at", endISO)
@@ -92,7 +91,7 @@ export default function ActionLogViewer() {
       if (logIds.length > 0) {
         const { data: imgs, error: imgErr } = await supabase
           .from("images")
-          .select("id, action_log_id, storage_path, mime_type, captured_at, width, height")
+          .select("*")
           .in("action_log_id", logIds);
         if (imgErr) throw imgErr;
         images = await Promise.all(
@@ -114,12 +113,9 @@ export default function ActionLogViewer() {
   const empty = useMemo(() => !loading && items.length === 0, [loading, items.length]);
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Action Logs (10 min grouped)</CardTitle>
-        </CardHeader>
-        <CardContent>
+    <div className="space-y-4">
+      <div className="text-sm font-medium text-gray-700 mb-2">Action Logs (10 min grouped)</div>
+      <div>
           {loading ? (
             <div className="text-sm text-gray-600">Loading...</div>
           ) : empty ? (
@@ -129,7 +125,7 @@ export default function ActionLogViewer() {
               {items.map((it, idx) => {
                 const created = it.summary.created_at ?? undefined;
                 const time = created ? new Date(created).toLocaleString() : "";
-                const firstLine = (it.summary.summary_text || "").split("\n")[0]?.slice(0, 120);
+                const firstLine = (it.summary.summary || "").split("\n")[0]?.slice(0, 120);
                 return (
                   <AccordionItem key={it.summary.id} value={it.summary.id}>
                     <AccordionTrigger onClick={() => (!it.children ? loadChildren(idx) : null)}>
@@ -140,7 +136,7 @@ export default function ActionLogViewer() {
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-4">
-                        <div className="text-sm whitespace-pre-wrap">{it.summary.summary_text}</div>
+                        <div className="text-sm whitespace-pre-wrap">{it.summary.summary}</div>
                         {it.loadingChildren ? (
                           <div className="text-xs text-gray-500">Loading details…</div>
                         ) : it.children ? (
@@ -185,8 +181,7 @@ export default function ActionLogViewer() {
               })}
             </Accordion>
           )}
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
