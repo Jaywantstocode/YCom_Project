@@ -7,8 +7,9 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { useRealtimeSpeaker } from '@/hooks/useRealtimeSpeaker';
 
-type UploadResult = { url: string; path: string } | null;
+type UploadResult = { url: string; path: string; summary?: string | null } | null;
 
 type DisplayMediaStreamConstraints = {
 	video?: boolean | MediaTrackConstraints;
@@ -37,12 +38,15 @@ export default function CaptureClient() {
 	const [status, setStatus] = useState<string>('');
 	const [uploaded, setUploaded] = useState<UploadResult>(null);
 	const [saveLocal, setSaveLocal] = useState<boolean>(true);
-	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-	const recordedChunksRef = useRef<Blob[]>([]);
+	const [commentaryEnabled, setCommentaryEnabled] = useState<boolean>(true);
+	const currentChunkRecorderRef = useRef<MediaRecorder | null>(null);
 	const streamRef = useRef<MediaStream | null>(null);
 	const shotTimerRef = useRef<number | null>(null);
 	const recTimerRef = useRef<number | null>(null);
 	const recInFlightRef = useRef<boolean>(false);
+	const stopRequestedRef = useRef<boolean>(false);
+	const lastSummaryRef = useRef<string>('');
+	const { speak } = useRealtimeSpeaker();
 
 	const resetUpload = useCallback(() => {
 		setUploaded(null);
@@ -73,7 +77,7 @@ export default function CaptureClient() {
 			const data = await res.json().catch(() => ({}));
 			throw new Error((data as { error?: string }).error || 'Upload failed');
 		}
-		return (await res.json()) as { url: string; path: string };
+		return (await res.json()) as { url: string; path: string; summary?: string | null };
 	}, [user?.id]);
 
 	// Capture a still frame from the screen share stream if available; fallback to html2canvas
@@ -113,10 +117,16 @@ export default function CaptureClient() {
 			const data = await uploadTo('/api/capture/screenshot', file);
 			setUploaded(data);
 			setStatus('Uploaded');
+			// Speak if enabled and summary available (dedupe)
+			const summary = (data as { summary?: string | null }).summary || '';
+			if (commentaryEnabled && summary && summary !== lastSummaryRef.current) {
+				lastSummaryRef.current = summary;
+				await speak(summary);
+			}
 		} catch (e) {
 			setStatus(e instanceof Error ? e.message : 'Error');
 		}
-	}, [resetUpload, uploadTo, saveLocal, saveFile, captureStillBlob]);
+	}, [resetUpload, uploadTo, saveLocal, saveFile, captureStillBlob, commentaryEnabled, speak]);
 
 	const startRecordingCycle = useCallback(() => {
 		const runOnce = () => {
@@ -143,11 +153,15 @@ export default function CaptureClient() {
 						setStatus(err instanceof Error ? err.message : 'Upload error');
 					} finally {
 						recInFlightRef.current = false;
-						// schedule next cycle in 60s
-						recTimerRef.current = window.setTimeout(runOnce, 60000);
+						currentChunkRecorderRef.current = null;
+						// schedule next cycle in 60s only if not stopping
+						if (!stopRequestedRef.current) {
+							recTimerRef.current = window.setTimeout(runOnce, 60000);
+						}
 					}
 				};
 				r.start();
+				currentChunkRecorderRef.current = r;
 				// record for 60s
 				setTimeout(() => r.stop(), 60000);
 			} catch {
@@ -165,11 +179,16 @@ export default function CaptureClient() {
 				if (!blob) return;
 				const file = new File([blob], `screenshot-${Date.now()}.png`, { type: 'image/png' });
 				if (saveLocal) saveFile(file);
-				await uploadTo('/api/capture/screenshot', file);
+				const data = await uploadTo('/api/capture/screenshot', file);
+				const summary = (data as { summary?: string | null }).summary || '';
+				if (commentaryEnabled && summary && summary !== lastSummaryRef.current) {
+					lastSummaryRef.current = summary;
+					await speak(summary);
+				}
 				setStatus('Uploaded screenshot');
 			} catch {}
-		}, 5000);
-	}, [saveLocal, saveFile, uploadTo, captureStillBlob]);
+		}, 10000);
+	}, [saveLocal, saveFile, uploadTo, captureStillBlob, commentaryEnabled, speak]);
 
 	const handleStartRecording = useCallback(async () => {
 		try {
@@ -180,41 +199,29 @@ export default function CaptureClient() {
 			}
 			const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
 			streamRef.current = stream;
-			// base recorder for session-long capture (optional)
-			const mr = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9,opus' });
-			recordedChunksRef.current = [];
-			mr.ondataavailable = (event) => { if (event.data.size > 0) recordedChunksRef.current.push(event.data); };
-			mr.onstop = async () => {
-				try {
-					const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
-					const file = new File([blob], `session-recording-${Date.now()}.webm`, { type: 'video/webm' });
-					if (saveLocal) saveFile(file);
-					await uploadTo('/api/capture/recording', file);
-				} catch {}
-			};
-			mr.start();
-			mediaRecorderRef.current = mr;
+			stopRequestedRef.current = false;
 			setIsRecording(true);
-			setStatus('Recording (periodic: screenshot 5s, recording 60s)...');
+			setStatus('Recording (periodic: screenshot 10s, recording 60s)...');
 			startPeriodicScreenshots();
 			startRecordingCycle();
 			if (permission === 'granted') {
-				notify('Recording started', { body: 'Periodic screenshot (5s) and 60s video every minute.' });
+				notify('Recording started', { body: 'Periodic screenshot (10s) and 60s video every minute.' });
 			}
 		} catch (e) {
 			setStatus(e instanceof Error ? e.message : 'Error');
 		}
-	}, [resetUpload, uploadTo, saveLocal, saveFile, startPeriodicScreenshots, startRecordingCycle, isSupported, permission, requestNotif, notify]);
+	}, [resetUpload, startPeriodicScreenshots, startRecordingCycle, isSupported, permission, requestNotif, notify]);
 
 	const handleStopRecording = useCallback(() => {
+		stopRequestedRef.current = true;
 		if (shotTimerRef.current) window.clearInterval(shotTimerRef.current);
 		if (recTimerRef.current) window.clearTimeout(recTimerRef.current);
 		shotTimerRef.current = null;
 		recTimerRef.current = null;
 		recInFlightRef.current = false;
-		const mr = mediaRecorderRef.current;
-		if (mr && mr.state !== 'inactive') {
-			mr.stop();
+		const cr = currentChunkRecorderRef.current;
+		if (cr && cr.state !== 'inactive') {
+			cr.stop();
 		}
 		const s = streamRef.current;
 		if (s) {
@@ -236,6 +243,10 @@ export default function CaptureClient() {
 					<div className="inline-flex items-center gap-2">
 						<Switch id="saveLocal" checked={saveLocal} onCheckedChange={(v) => setSaveLocal(Boolean(v))} />
 						<label htmlFor="saveLocal" className="select-none text-sm text-gray-700">Save locally</label>
+					</div>
+					<div className="inline-flex items-center gap-2">
+						<Switch id="commentary" checked={commentaryEnabled} onCheckedChange={(v) => setCommentaryEnabled(Boolean(v))} />
+						<label htmlFor="commentary" className="select-none text-sm text-gray-700">Audio commentary</label>
 					</div>
 				</div>
 				<div className="flex gap-3">

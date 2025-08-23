@@ -63,13 +63,18 @@ export async function POST(request: Request) {
 					return NextResponse.json({ error: 'Failed to save image row' }, { status: 500 });
 				}
 				// Run analysis + embedding save synchronously to ensure DB update before returning
-				await analyzeAndSaveScreenCapture({
+				const analysisResult = await analyzeAndSaveScreenCapture({
 					image: Buffer.from(buffer),
 					timestamp: Date.now(),
 					userId,
 					actionLogId,
 				});
-				return NextResponse.json({ path: data.path, url: publicUrlData.publicUrl, action_log_id: actionLogId });
+				return NextResponse.json({
+					path: data.path,
+					url: publicUrlData.publicUrl,
+					action_log_id: actionLogId,
+					summary: analysisResult.analysis?.description ?? null,
+				});
 			}
 		} catch (e) {
 			console.error('screenshot handler error', e);
