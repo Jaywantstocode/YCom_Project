@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { getDefaultModel, getModelConfig } from './lm-models';
 
 // AI analysis input parameters (all optional)
 export interface AnalysisInput {
@@ -64,9 +65,14 @@ export async function analyzeScreenCapture(input: AnalysisInput): Promise<Analys
       imageUrl = input.image as string; // Use URL directly if provided
     }
 
+    // Get the default vision model for analysis (use FAST_ANALYSIS for better response)
+    const modelId = getDefaultModel('FAST_ANALYSIS');
+    const modelConfig = getModelConfig(modelId);
+    console.log('🤖 Using model:', { modelId, name: modelConfig?.name });
+
     // Analyze image using OpenAI Vision API
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: modelId,
       messages: [
         {
           role: "user",
@@ -92,12 +98,16 @@ Please respond concisely in Japanese.`
           ]
         }
       ],
-      max_tokens: 500,
-      temperature: 0.7
+      max_completion_tokens: Math.min(modelConfig?.maxTokens || 4096, 2000), // Increased for GPT-5 reasoning tokens
+      // temperature: GPT-5 only supports default temperature (1)
     });
 
+    console.log('🔍 OpenAI API response structure:', JSON.stringify(response, null, 2));
+    
     const content = response.choices[0]?.message?.content;
     if (!content) {
+      console.log('❌ Response choices:', response.choices);
+      console.log('❌ First choice:', response.choices[0]);
       throw new Error('Empty response from OpenAI API');
     }
 
@@ -128,4 +138,5 @@ Please respond concisely in Japanese.`
   }
 }
 
-
+// Export model-related utilities for convenience
+export { OpenAIModel, getDefaultModel, getModelConfig, getVisionCapableModels } from './lm-models';

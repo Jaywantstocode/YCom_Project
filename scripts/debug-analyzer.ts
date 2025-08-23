@@ -1,20 +1,19 @@
-#!/usr/bin/env node
+#!/usr/bin/env tsx
 
 // .envファイルを読み込み
-require('dotenv').config();
-
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
+import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+import { analyzeScreenCapture } from '../src/lib/ai/analyzer';
 
 // 設定
 const CAPTURED_FRAMES_DIR = path.join(__dirname, '..', 'captured-frames');
-const DEFAULT_IMAGE_INDEX = 10; // デフォルトで使用する画像のインデックス
+const DEFAULT_IMAGE_INDEX = 10;
 
 /**
  * 利用可能な画像ファイルを取得
  */
-function getAvailableImages() {
+function getAvailableImages(): string[] {
     if (!fs.existsSync(CAPTURED_FRAMES_DIR)) {
         console.error(`❌ エラー: captured-framesディレクトリが見つかりません: ${CAPTURED_FRAMES_DIR}`);
         process.exit(1);
@@ -37,7 +36,7 @@ function getAvailableImages() {
 /**
  * 画像ファイルパスを取得
  */
-function getImagePath(imageIndex) {
+function getImagePath(imageIndex: number): string {
     const images = getAvailableImages();
     
     console.log(`📸 利用可能な画像: ${images.length}枚`);
@@ -53,100 +52,6 @@ function getImagePath(imageIndex) {
     console.log(`🖼️  選択された画像: ${images[index]} (インデックス: ${index})`);
     
     return imagePath;
-}
-
-/**
- * TypeScript analyzer を実行
- */
-function runAnalyzer(imagePath) {
-    return new Promise((resolve, reject) => {
-        // TypeScriptファイルを実行するスクリプト
-        const analyzerScript = `
-const fs = require('fs');
-const path = require('path');
-
-async function runAnalysis() {
-    try {
-        const ts = require('typescript');
-        const analyzerPath = path.join(__dirname, '..', 'src', 'lib', 'ai', 'analyzer.ts');
-        const tsCode = fs.readFileSync(analyzerPath, 'utf8');
-        
-        const compiledCode = ts.transpile(tsCode, {
-            module: ts.ModuleKind.CommonJS,
-            target: ts.ScriptTarget.ES2018,
-            esModuleInterop: true,
-            allowSyntheticDefaultImports: true
-        });
-        
-        const module = { exports: {} };
-        const func = new Function('module', 'exports', 'require', '__dirname', '__filename', compiledCode);
-        func(module, module.exports, require, __dirname, __filename);
-        
-        const imageBuffer = fs.readFileSync('${imagePath}');
-        const analyzeFunction = module.exports.analyzeScreenCapture;
-        
-        if (!analyzeFunction) {
-            throw new Error('analyzeScreenCapture 関数が見つかりません');
-        }
-        
-        const analysisResult = await analyzeFunction({
-            image: imageBuffer,
-            timestamp: Date.now()
-        });
-        
-        console.log('✨ 分析結果:');
-        console.log(JSON.stringify(analysisResult, null, 2));
-        
-    } catch (error) {
-        console.error('❌ エラー:', error.message);
-        process.exit(1);
-    }
-}
-
-runAnalysis();
-`;
-        
-        const tempFile = path.join(__dirname, 'temp-analyzer.js');
-        fs.writeFileSync(tempFile, analyzerScript);
-        
-        const node = spawn('node', [tempFile], {
-            stdio: ['pipe', 'pipe', 'pipe'],
-            env: { ...process.env }
-        });
-        
-        let output = '';
-        let errorOutput = '';
-        
-        node.stdout.on('data', (data) => {
-            const text = data.toString();
-            output += text;
-            process.stdout.write(text);
-        });
-        
-        node.stderr.on('data', (data) => {
-            const text = data.toString();
-            errorOutput += text;
-            process.stderr.write(text);
-        });
-        
-        node.on('close', (code) => {
-            try {
-                fs.unlinkSync(tempFile);
-            } catch (e) {
-                // ファイル削除エラーは無視
-            }
-            
-            if (code === 0) {
-                resolve(output);
-            } else {
-                reject(new Error(`分析スクリプトがエラーコード ${code} で終了`));
-            }
-        });
-        
-        node.on('error', (error) => {
-            reject(new Error(`分析スクリプトの実行に失敗: ${error.message}`));
-        });
-    });
 }
 
 /**
@@ -191,10 +96,19 @@ async function main() {
         const imagePath = getImagePath(imageIndex);
         
         console.log('🤖 AI分析を実行中...');
-        await runAnalyzer(imagePath);
+        
+        // 画像を読み込んでAI分析を実行
+        const imageBuffer = fs.readFileSync(imagePath);
+        const result = await analyzeScreenCapture({
+            image: imageBuffer,
+            timestamp: Date.now()
+        });
+        
+        console.log('✨ 分析結果:');
+        console.log(JSON.stringify(result, null, 2));
         
     } catch (error) {
-        console.error(`❌ エラー: ${error.message}`);
+        console.error(`❌ エラー: ${error instanceof Error ? error.message : error}`);
         console.error('');
         console.error('💡 トラブルシューティング:');
         console.error('1. OPENAI_API_KEY環境変数が設定されているか確認');
