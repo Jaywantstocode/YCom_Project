@@ -64,7 +64,9 @@ const setPlanParams = z.object({
 });
 
 // Core function
-const setPlanCore = async (_plan: z.infer<typeof setPlanParams>) => {
+const setPlanCore = async (plan: z.infer<typeof setPlanParams>) => {
+  // プランの内容をログに出力（デバッグ用）
+  console.log('Productivity plan set:', plan.summary.mainActivity);
   return {
     success: true
   };

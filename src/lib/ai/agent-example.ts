@@ -9,12 +9,14 @@ import { GoogleModel } from './lm-models';
 import { z } from 'zod';
 
 // Parameter schemas to enable safe parsing/narrowing (avoid any)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const CreateNoteParamsSchema = z.object({
   title: z.string().describe('Title of the note'),
   content: z.string().describe('Content of the note'),
   tags: z.array(z.string()).optional().describe('Optional tags for the note'),
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const UpdateNoteParamsSchema = z.object({
   noteId: z.string().describe('ID of the note to update'),
   title: z.string().optional().describe('New title'),
@@ -22,11 +24,13 @@ const UpdateNoteParamsSchema = z.object({
   tags: z.array(z.string()).optional().describe('New tags'),
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const SearchNotesParamsSchema = z.object({
   query: z.string().describe('Search query'),
   limit: z.number().optional().default(10).describe('Maximum number of results'),
 });
 
+// Type definitions for parameter schemas
 type CreateNoteParams = z.infer<typeof CreateNoteParamsSchema>;
 type UpdateNoteParams = z.infer<typeof UpdateNoteParamsSchema>;
 type SearchNotesParams = z.infer<typeof SearchNotesParamsSchema>;
@@ -35,8 +39,9 @@ type SearchNotesParams = z.infer<typeof SearchNotesParamsSchema>;
 // We still execute the corresponding functions manually in onStepFinish
 const createNoteTools = {} as const;
 
-// Mock implementations for the tools
-async function executeCreateNote({ title, content, tags }: { title: string; content: string; tags?: string[] }) {
+// Mock implementations for the tools (used for demonstration)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function executeCreateNote({ title, content, tags }: CreateNoteParams) {
   console.log('Creating note:', { title, content, tags });
   return {
     success: true,
@@ -45,7 +50,8 @@ async function executeCreateNote({ title, content, tags }: { title: string; cont
   };
 }
 
-async function executeUpdateNote({ noteId, title, content, tags }: { noteId: string; title?: string; content?: string; tags?: string[] }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function executeUpdateNote({ noteId, title, content, tags }: UpdateNoteParams) {
   console.log('Updating note:', { noteId, title, content, tags });
   return {
     success: true,
@@ -54,7 +60,8 @@ async function executeUpdateNote({ noteId, title, content, tags }: { noteId: str
   };
 }
 
-async function executeSearchNotes({ query, limit }: { query: string; limit?: number }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+async function executeSearchNotes({ query, limit }: SearchNotesParams) {
   console.log('Searching notes:', { query, limit });
   return {
     success: true,

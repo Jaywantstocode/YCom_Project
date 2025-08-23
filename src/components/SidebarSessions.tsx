@@ -1,14 +1,8 @@
 "use client";
 
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserProfile } from '@/components/UserProfile';
 import Link from 'next/link';
-
-function formatTime(ts: number) {
-	const d = new Date(ts);
-	return d.toLocaleString();
-}
 
 export default function SidebarSessions() {
 	return (

@@ -55,7 +55,7 @@ async function getVideoInfo(inputPath: string): Promise<{
       `ffprobe -v quiet -print_format json -show_format -show_streams "${inputPath}"`
     );
     const info = JSON.parse(stdout);
-    const videoStream = info.streams.find((s: any) => s.codec_type === 'video');
+    const videoStream = info.streams.find((s: { codec_type: string }) => s.codec_type === 'video');
     
     return {
       duration: parseFloat(info.format.duration),

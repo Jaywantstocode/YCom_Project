@@ -41,7 +41,7 @@ export default function RealtimeAgent({ imageDescription }: Props) {
       socket.onmessage = async (event) => {
         if (!isActive) return;
         try {
-          const data = JSON.parse(event.data as string) as { type?: string; delta?: string; }; // eslint-disable-line @typescript-eslint/no-explicit-any
+          const data = JSON.parse(event.data as string) as { type?: string; delta?: string; };
           if (data.type === 'response.text.delta' && data.delta) {
             setResponseText((prev) => prev + data.delta);
           }
@@ -52,7 +52,7 @@ export default function RealtimeAgent({ imageDescription }: Props) {
             const bytes = new Uint8Array(len);
             for (let i = 0; i < len; i++) bytes[i] = byteString.charCodeAt(i);
 
-            if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
             const audioBuffer = await audioContextRef.current.decodeAudioData(bytes.buffer.slice(0));
             const source = audioContextRef.current.createBufferSource();
             source.buffer = audioBuffer;

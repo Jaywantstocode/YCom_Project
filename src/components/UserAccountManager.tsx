@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 export default function UserAccountManager() {
   const { user, profile, signOut, updateProfile } = useAuth();
@@ -36,7 +37,7 @@ export default function UserAccountManager() {
           description: "You have been logged out successfully",
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Logout Error",
         description: "An unexpected error occurred",
@@ -64,7 +65,7 @@ export default function UserAccountManager() {
         });
         setIsEditing(false);
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Profile Update Error",
         description: "An unexpected error occurred",
@@ -160,12 +161,14 @@ export default function UserAccountManager() {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Avatar</Label>
                 <div className="flex items-center gap-2">
-                  <img 
+                  <Image 
                     src={profile.avatar_url} 
                     alt="Avatar" 
+                    width={32}
+                    height={32}
                     className="w-8 h-8 rounded-full"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
+                    onError={() => {
+                      // エラー時の処理はNext.js Imageコンポーネントで自動的に処理される
                     }}
                   />
                   <div className="text-sm text-muted-foreground truncate">{profile.avatar_url}</div>

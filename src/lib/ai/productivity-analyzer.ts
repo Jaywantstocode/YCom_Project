@@ -58,7 +58,7 @@ export interface AgentTip {
 // Analysis result interface
 export interface ProductivityAnalysis {
   success: boolean;
-  analysis: any; // JSON analysis result
+  analysis: Record<string, unknown> | null; // JSON analysis result
   error?: string;
 }
 
@@ -83,7 +83,7 @@ export async function analyzeVideoFromPath(path: string): Promise<ProductivityAn
     console.error('❌ 動画読み込みエラー:', error);
     return {
       success: false,
-      analysis: '',
+      analysis: null,
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }

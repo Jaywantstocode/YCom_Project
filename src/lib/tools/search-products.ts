@@ -29,7 +29,15 @@ const searchProductHuntCore = async ({
       for (const query of queries) {
         console.log(`Searching for: ${query}`);
         
-        let products: any[] = [];
+        let products: Array<{
+          id: string;
+          title?: string;
+          content?: string;
+          url?: string;
+          tags?: string[];
+          similarity?: number;
+          search_type?: string;
+        }> = [];
         
         if (useSemanticSearch) {
           // Use vector/semantic search with embeddings

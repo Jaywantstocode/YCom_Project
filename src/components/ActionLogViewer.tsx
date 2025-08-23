@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import Image from 'next/image';
 
 type ActionLogRow = Database["public"]["Tables"]["action_logs"]["Row"];
 type ImageRow = Database["public"]["Tables"]["images"]["Row"];
@@ -161,11 +162,12 @@ export default function ActionLogViewer() {
                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                                   {it.children.images.map((img) => (
                                     <a key={img.id} href={img.url} target="_blank" rel="noreferrer" className="block">
-                                      <img
+                                      <Image
                                         src={img.url}
                                         alt={img.storage_path}
+                                        width={200}
+                                        height={112}
                                         className="w-full h-28 object-cover rounded border"
-                                        loading="lazy"
                                       />
                                     </a>
                                   ))}

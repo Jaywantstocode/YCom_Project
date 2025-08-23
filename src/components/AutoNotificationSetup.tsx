@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNotifications } from '@/hooks/useNotifications';
 
 // VAPID公開鍵をBase64からUint8Arrayに変換
@@ -22,38 +22,7 @@ export default function AutoNotificationSetup() {
   const [hasPrompted, setHasPrompted] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
 
-  useEffect(() => {
-    // ページ読み込み時に自動で通知許可を求める
-    const setupNotifications = async () => {
-      // 既に許可されているか、サポートされていない場合はスキップ
-      if (!isSupported || permission === 'granted' || permission === 'denied' || hasPrompted) {
-        return;
-      }
-
-      // 少し遅延を入れてユーザーエクスペリエンスを向上
-      setTimeout(async () => {
-        setHasPrompted(true);
-        
-        try {
-          console.log('🔔 通知許可を求めています...');
-          const result = await request();
-          
-          if (result === 'granted') {
-            console.log('✅ 通知許可が得られました');
-            await setupPushSubscription();
-          } else {
-            console.log('❌ 通知許可が拒否されました');
-          }
-        } catch (error) {
-          console.error('通知許可エラー:', error);
-        }
-      }, 2000); // 2秒後に許可を求める
-    };
-
-    setupNotifications();
-  }, [isSupported, permission, request, hasPrompted]);
-
-  const setupPushSubscription = async () => {
+  const setupPushSubscription = useCallback(async () => {
     if (isSubscribing) return;
     
     setIsSubscribing(true);
@@ -132,7 +101,38 @@ export default function AutoNotificationSetup() {
     } finally {
       setIsSubscribing(false);
     }
-  };
+  }, [isSubscribing]);
+
+  useEffect(() => {
+    // ページ読み込み時に自動で通知許可を求める
+    const setupNotifications = async () => {
+      // 既に許可されているか、サポートされていない場合はスキップ
+      if (!isSupported || permission === 'granted' || permission === 'denied' || hasPrompted) {
+        return;
+      }
+
+      // 少し遅延を入れてユーザーエクスペリエンスを向上
+      setTimeout(async () => {
+        setHasPrompted(true);
+        
+        try {
+          console.log('🔔 通知許可を求めています...');
+          const result = await request();
+          
+          if (result === 'granted') {
+            console.log('✅ 通知許可が得られました');
+            await setupPushSubscription();
+          } else {
+            console.log('❌ 通知許可が拒否されました');
+          }
+        } catch (error) {
+          console.error('通知許可エラー:', error);
+        }
+      }, 2000); // 2秒後に許可を求める
+    };
+
+    setupNotifications();
+  }, [isSupported, permission, request, hasPrompted, setupPushSubscription]);
 
   // このコンポーネントは見た目を持たない（自動セットアップのみ）
   return null;

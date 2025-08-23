@@ -150,11 +150,11 @@ async function main() {
           console.log(`${analysis.productivityScore}/100`);
         }
         
-        if (analysis.topRecommendation) {
+        if (analysis.topRecommendation && typeof analysis.topRecommendation === 'object' && 'title' in analysis.topRecommendation) {
           console.log('\n' + colors.bright + '⭐ Top Recommendation:' + colors.reset);
-          console.log(`Title: ${analysis.topRecommendation.title}`);
-          console.log(`Action: ${analysis.topRecommendation.action}`);
-          console.log(`Expected Benefit: ${analysis.topRecommendation.expectedBenefit}`);
+          console.log(`Title: ${(analysis.topRecommendation as any).title}`);
+          console.log(`Action: ${(analysis.topRecommendation as any).action}`);
+          console.log(`Expected Benefit: ${(analysis.topRecommendation as any).expectedBenefit}`);
         }
         
         if (analysis.userAdvice) {

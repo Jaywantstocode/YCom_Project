@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 
 const LiveActionLogs = dynamic(() => import('./LiveActionLogs'), { ssr: false });
 import CaptureClient from './CaptureClient';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+
 import ActionLogViewer from '@/components/ActionLogViewer';
 
 export default function CapturePanel() {

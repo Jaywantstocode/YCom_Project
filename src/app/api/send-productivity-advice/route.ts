@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import webPush from 'web-push';
 import { getSubscriptions, getSubscriptionCount } from '@/lib/notifications/subscriptions';
 
+// web-pushライブラリのPushSubscription型
+type WebPushSubscription = {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+};
+
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || '';
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:example@example.com';
@@ -29,7 +38,7 @@ export async function POST(req: NextRequest) {
 		// すべての登録されたサブスクリプションに送信
 		const promises = subscriptions.map(async (subscription) => {
 			try {
-				await webPush.sendNotification(subscription, JSON.stringify({ title, body }));
+				await webPush.sendNotification(subscription as WebPushSubscription, JSON.stringify({ title, body }));
 			} catch (error) {
 				console.error('通知送信エラー:', error);
 			}
