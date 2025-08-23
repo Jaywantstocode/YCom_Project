@@ -14,22 +14,20 @@ export interface AnalysisInput {
   actionLogId?: string; // Action log ID to associate with analysis
 }
 
-// AI analysis result
+// AI analysis result - サマリのみに特化
 export interface AnalysisResult {
   success: boolean;
   timestamp: number;
   analysis?: {
     description: string;
-    insights: string[];
   };
   error?: string;
   actionLogId?: string; // ID of the created or updated action log record
 }
 
-// Zod schema for structured output
+// Zod schema for structured output - サマリのみ
 const AnalysisSchema = z.object({
-  description: z.string().describe("Concise summary of what is displayed on the screen"),
-  insights: z.array(z.string()).describe("List of specific findings and observations from the screen analysis")
+  description: z.string().describe("Concise summary of what is displayed on the screen")
 });
 
 
@@ -50,11 +48,11 @@ function encodeImageToBase64(imageData: Buffer): string {
 type ActionLogInsert = Database['public']['Tables']['action_logs']['Insert'];
 
 /**
- * Save screen capture analysis results to action_logs table
- * Stores description in summary field and other data in details field
+ * Save screen capture summary to action_logs table
+ * サマリのみをsummary fieldに保存
  */
 async function saveAnalysisResultToDatabase(
-  analysisData: { description: string; insights: string[] },
+  analysisData: { description: string },
   userId: string,
   actionLogId: string,
   timestamp: number
@@ -62,20 +60,20 @@ async function saveAnalysisResultToDatabase(
   try {
     const supabase = getSupabaseServiceClient();
     
-    // Generate tags from insights for better searchability
-    const tags = analysisData.insights
-      .map(insight => insight.toLowerCase())
-      .filter(insight => insight.length > 0)
-      .slice(0, 10); // Limit to 10 tags
+    // サマリから簡単なタグを生成
+    const words = analysisData.description.toLowerCase().split(/\s+/);
+    const tags = words
+      .filter(word => word.length > 3)
+      .slice(0, 5); // 最大5個のタグ
 
-    // Action log data structure: description in summary, other data in details
+    // Action log data structure: サマリのみ
     const actionLogData: ActionLogInsert = {
       id: actionLogId,
       user_id: userId,
       type: 'screen_capture_analyze',
       summary: analysisData.description,
       details: {
-        insights: analysisData.insights
+        capture_type: 'screen_summary'
       },
       tags: tags.length > 0 ? tags : null,
       started_at: new Date(timestamp).toISOString(),
@@ -89,11 +87,11 @@ async function saveAnalysisResultToDatabase(
       .single();
 
     if (error) {
-      console.error('❌ Failed to save analysis to database:', error);
+      console.error('❌ Failed to save summary to database:', error);
       throw new Error(`Database save failed: ${error.message}`);
     }
 
-    console.log('✅ Analysis saved to database with ID:', data.id);
+    console.log('✅ Summary saved to database with ID:', data.id);
     return data.id;
 
   } catch (error) {
@@ -103,8 +101,8 @@ async function saveAnalysisResultToDatabase(
 }
 
 /**
- * Main AI analysis function
- * Analyzes screen capture using Vercel AI SDK with image, audio, and timestamp
+ * スクリーンキャプチャのサマリ生成関数
+ * 画面に表示されている内容の簡潔な要約のみを生成
  */
 export async function analyzeScreenCapture(input: AnalysisInput): Promise<AnalysisResult> {
   const timestamp = input.timestamp || Date.now();
@@ -117,8 +115,7 @@ export async function analyzeScreenCapture(input: AnalysisInput): Promise<Analys
         success: true,
         timestamp,
         analysis: {
-          description: 'No image data provided',
-          insights: ['Waiting for screen capture...'],
+          description: 'No image data provided - waiting for screen capture',
         }
       };
     }
@@ -147,14 +144,14 @@ export async function analyzeScreenCapture(input: AnalysisInput): Promise<Analys
           content: [
             {
               type: "text",
-              text: `Analyze this screen capture and provide information from the following perspectives:
+              text: `Create a concise summary of what is currently displayed on this screen.
 
-1. Main content or applications displayed on the screen
-2. What the user appears to be doing
-3. Notable elements or changes if any
-4. Suggestions for efficiency or improvements if any
+Focus on:
+- Main application or content visible
+- Primary activity or task being performed
+- Key elements or information shown
 
-Please respond concisely in English.`
+Provide only a brief, factual description in English without analysis or suggestions.`
             },
             {
               type: "image",
@@ -176,8 +173,7 @@ Please respond concisely in English.`
       success: true,
       timestamp,
       analysis: {
-        description: result.object.description || 'Screen analysis completed',
-        insights: result.object.insights || []
+        description: result.object.description || 'Screen summary completed'
       }
     };
 
@@ -192,8 +188,8 @@ Please respond concisely in English.`
 }
 
 /**
- * Comprehensive screen capture analysis with database storage
- * Performs AI analysis and saves results to Supabase database
+ * スクリーンキャプチャサマリ生成とデータベース保存
+ * サマリを生成してSupabaseデータベースに保存
  */
 export async function analyzeAndSaveScreenCapture(input: AnalysisInput): Promise<AnalysisResult> {
   const timestamp = input.timestamp || Date.now();
