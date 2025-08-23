@@ -209,6 +209,39 @@ export type Database = {
         }
         Relationships: []
       }
+      log_summary: {
+        Row: {
+          id: string
+          user_id: string
+          action_log_id: string | null
+          summary_text: string
+          structured: Json | null
+          tags: string[] | null
+          embedding: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action_log_id?: string | null
+          summary_text: string
+          structured?: Json | null
+          tags?: string[] | null
+          embedding?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action_log_id?: string | null
+          summary_text?: string
+          structured?: Json | null
+          tags?: string[] | null
+          embedding?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           action_log_id: string | null

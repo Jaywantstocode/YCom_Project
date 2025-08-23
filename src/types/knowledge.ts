@@ -44,7 +44,7 @@ export interface ApiResponse<T> {
 
 // Constants
 export const SEARCH_DEFAULTS = {
-  SIMILARITY_THRESHOLD: 0.7,
+  SIMILARITY_THRESHOLD: 0.3,
   MAX_RESULTS: 20,
   MIN_QUERY_LENGTH: 2,
 } as const;
