@@ -7,8 +7,6 @@ import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import RealtimeAgent from './RealtimeAgent';
-// RealtimeAgent is available for the demo page; here we use Web Speech API for low-latency TTS
 
 type UploadResult = { url: string; path: string } | null;
 
@@ -39,29 +37,12 @@ export default function CaptureClient() {
 	const [status, setStatus] = useState<string>('');
 	const [uploaded, setUploaded] = useState<UploadResult>(null);
 	const [saveLocal, setSaveLocal] = useState<boolean>(true);
-	const [commentaryEnabled, setCommentaryEnabled] = useState<boolean>(false);
-	const [speakText, setSpeakText] = useState<string>('');
 	const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 	const recordedChunksRef = useRef<Blob[]>([]);
 	const streamRef = useRef<MediaStream | null>(null);
 	const shotTimerRef = useRef<number | null>(null);
 	const recTimerRef = useRef<number | null>(null);
 	const recInFlightRef = useRef<boolean>(false);
-	const analysisInFlightRef = useRef<boolean>(false);
-	const lastSummaryRef = useRef<string>('');
-
-	const speakNow = useCallback((text: string) => {
-		try {
-			if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-				window.speechSynthesis.cancel();
-				const u = new SpeechSynthesisUtterance(text);
-				u.lang = 'ja-JP';
-				u.rate = 1.05;
-				u.pitch = 1.0;
-				window.speechSynthesis.speak(u);
-			}
-		} catch {}
-	}, []);
 
 	const resetUpload = useCallback(() => {
 		setUploaded(null);
@@ -86,9 +67,7 @@ export default function CaptureClient() {
 	const uploadTo = useCallback(async (endpoint: '/api/capture/screenshot' | '/api/capture/recording', file: File) => {
 		const formData = new FormData();
 		formData.append('file', file);
-		if (user?.id) {
-			formData.append('user_id', user.id);
-		}
+		if (user?.id) formData.append('user_id', user.id);
 		const res = await fetch(endpoint, { method: 'POST', body: formData });
 		if (!res.ok) {
 			const data = await res.json().catch(() => ({}));
@@ -188,40 +167,9 @@ export default function CaptureClient() {
 				if (saveLocal) saveFile(file);
 				await uploadTo('/api/capture/screenshot', file);
 				setStatus('Uploaded screenshot');
-				if (commentaryEnabled && !analysisInFlightRef.current) {
-					analysisInFlightRef.current = true;
-					try {
-						const formData = new FormData();
-						const imgForAnalysis = new File([blob], `frame-${Date.now()}.png`, { type: 'image/png' });
-						formData.append('image', imgForAnalysis);
-						formData.append('prompt', `前回の要約: ${lastSummaryRef.current || 'なし'}\n今回の画像で前回から明確な変化がある場合のみ、日本語で1〜2文の短い実況を返してください。新規性がなければNOCHANGEとだけ返してください。`);
-						const res = await fetch('/api/analyze-image', { method: 'POST', body: formData });
-						if (res.ok && res.body) {
-							const reader = res.body.getReader();
-							const decoder = new TextDecoder();
-							let text = '';
-							while (true) {
-								const { done, value } = await reader.read();
-								if (done) break;
-								text += decoder.decode(value);
-							}
-							const finalText = text.trim();
-							if (finalText && !/^NOCHANGE\b/i.test(finalText)) {
-								setSpeakText(finalText);
-								lastSummaryRef.current = finalText;
-								speakNow(finalText);
-								window.setTimeout(() => setSpeakText(''), 8000);
-							}
-						}
-					} catch {
-						// ignore
-					} finally {
-						analysisInFlightRef.current = false;
-					}
-				}
 			} catch {}
 		}, 5000);
-	}, [saveLocal, saveFile, uploadTo, captureStillBlob, commentaryEnabled]);
+	}, [saveLocal, saveFile, uploadTo, captureStillBlob]);
 
 	const handleStartRecording = useCallback(async () => {
 		try {
@@ -289,10 +237,6 @@ export default function CaptureClient() {
 						<Switch id="saveLocal" checked={saveLocal} onCheckedChange={(v) => setSaveLocal(Boolean(v))} />
 						<label htmlFor="saveLocal" className="select-none text-sm text-gray-700">Save locally</label>
 					</div>
-					<div className="inline-flex items-center gap-2">
-						<Switch id="liveCommentary" checked={commentaryEnabled} onCheckedChange={(v) => setCommentaryEnabled(Boolean(v))} />
-						<label htmlFor="liveCommentary" className="select-none text-sm text-gray-700">Live commentary</label>
-					</div>
 				</div>
 				<div className="flex gap-3">
 					{!isRecording ? (
@@ -304,11 +248,6 @@ export default function CaptureClient() {
 				</div>
 				<div className="text-sm text-gray-600 min-h-5">{status}</div>
 			</CardContent>
-			{commentaryEnabled && speakText ? (
-				<div style={{ display: 'none' }} aria-hidden>
-					<RealtimeAgent imageDescription={`以下の要約を1〜2文で実況的に音声化してください: ${speakText}`} />
-				</div>
-			) : null}
 			{uploaded?.url ? (
 				<CardFooter>
 					<a className="inline-flex w-fit items-center gap-2 rounded-lg border border-gray-200 bg-white/70 px-3 py-2 text-sm text-blue-700 underline shadow hover:no-underline" href={uploaded.url} target="_blank" rel="noreferrer">

@@ -2,7 +2,7 @@
 
 import SidebarSessions from "@/components/SidebarSessions";
 import CapturePanel from "@/components/CapturePanel";
-import { UserProfile } from "@/components/UserProfile";
+// import { UserProfile } from "@/components/UserProfile";
 import { Button } from "@/components/ui/button";
 import { Database } from "lucide-react";
 import Link from "next/link";

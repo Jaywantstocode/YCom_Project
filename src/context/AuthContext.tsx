@@ -59,6 +59,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Read Supabase SDK's own localStorage entry to recover tokens if needed
+  const loadSupabaseStoredTokens = (): { access_token: string; refresh_token: string } | null => {
+    try {
+      if (typeof window === 'undefined') return null;
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      const m = url.match(/^https?:\/\/([^.]+)\./);
+      const ref = m?.[1];
+      if (!ref) return null;
+      const key = `sb-${ref}-auth-token`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as { currentSession?: { access_token?: string; refresh_token?: string } };
+      const at = parsed?.currentSession?.access_token;
+      const rt = parsed?.currentSession?.refresh_token;
+      if (at && rt) return { access_token: at, refresh_token: rt };
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   // プロファイルを取得する関数
   const fetchProfile = useCallback(async (userId: string) => {
     if (!supabase) return null;
@@ -96,21 +117,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Fallback to locally cached session to avoid logged-out flash on reload
       let sess = initialSession ?? null;
       if (!sess) {
+        // Try our own cached session first
         const cached = loadLocalSession();
         if (cached?.access_token && cached?.refresh_token) {
           try {
-            const { data, error } = await supabase.auth.setSession({
+            const { data } = await supabase.auth.setSession({
               access_token: (cached as unknown as { access_token: string }).access_token,
               refresh_token: (cached as unknown as { refresh_token: string }).refresh_token,
             });
-            if (!error && data.session) {
+            if (data.session) {
               sess = data.session;
-            } else {
-              sess = cached; // last resort: use cached for UI only
             }
-          } catch {
-            sess = cached; // UI fallback
-          }
+          } catch {}
+        }
+      }
+      if (!sess) {
+        // Fallback to Supabase SDK's own stored token if present
+        const stored = loadSupabaseStoredTokens();
+        if (stored) {
+          try {
+            const { data } = await supabase.auth.setSession({
+              access_token: stored.access_token,
+              refresh_token: stored.refresh_token,
+            });
+            if (data.session) {
+              sess = data.session;
+            }
+          } catch {}
         }
       }
       
