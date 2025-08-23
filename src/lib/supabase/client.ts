@@ -16,8 +16,14 @@ export function getBrowserSupabaseClient(): SupabaseClient<Database> {
 		throw new Error('getBrowserSupabaseClient must be called on the client');
 	}
 	if (!cachedClient) {
-		const url = getEnv('NEXT_PUBLIC_SUPABASE_URL');
-		const anonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+		const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+		const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+		if (!url) {
+			throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_URL');
+		}
+		if (!anonKey) {
+			throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY');
+		}
 		cachedClient = createClient<Database>(url, anonKey, {
 			auth: {
 				autoRefreshToken: true,
