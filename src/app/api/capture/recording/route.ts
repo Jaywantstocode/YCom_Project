@@ -27,27 +27,46 @@ export async function POST(request: Request) {
 		if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 		const { data: publicUrlData } = supabase.storage.from('captures').getPublicUrl(data.path);
 
-		// Create action_log and link video (no analysis for now)
+		// Create action_log and link video (using custom type for recordings)
 		try {
 			if (userId) {
 				const actionLogId = randomUUID();
-				await supabase.from('action_logs').upsert({
-					id: actionLogId,
-					user_id: userId,
-					type: 'screen_capture_recording',
-					started_at: new Date().toISOString(),
-					details: { storage_path: data.path },
-				});
-				await supabase.from('videos').insert({
+				const startedAt = new Date().toISOString();
+				const { data: insertedLog, error: logErr } = await supabase
+					.from('action_logs')
+					.insert({
+						id: actionLogId,
+						user_id: userId,
+						type: 'custom',
+						started_at: startedAt,
+						summary: 'Screen recording captured',
+						details: { storage_path: data.path, recording: true },
+						tags: ['capture','recording'],
+					})
+					.select('id')
+					.single();
+				if (logErr || !insertedLog) {
+					console.error('action_logs insert failed for recording', logErr);
+					return NextResponse.json({ error: 'Failed to create action log for recording' }, { status: 500 });
+				}
+				const { error: videoErr } = await supabase.from('videos').insert({
 					user_id: userId,
 					storage_path: data.path,
 					mime_type: file.type || 'video/webm',
 					size_bytes: buffer.length,
-					captured_at: new Date().toISOString(),
+					captured_at: startedAt,
 					action_log_id: actionLogId,
 				});
+				if (videoErr) {
+					console.error('videos insert failed', videoErr);
+					return NextResponse.json({ error: 'Failed to save video row' }, { status: 500 });
+				}
+				return NextResponse.json({ path: data.path, url: publicUrlData.publicUrl, action_log_id: actionLogId });
 			}
-		} catch {}
+		} catch (e) {
+			console.error('recording handler error', e);
+			return NextResponse.json({ error: 'Failed during DB linkage' }, { status: 500 });
+		}
 
 		return NextResponse.json({ path: data.path, url: publicUrlData.publicUrl });
 	} catch (e) {

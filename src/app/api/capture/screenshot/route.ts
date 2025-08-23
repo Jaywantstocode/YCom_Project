@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 					.insert({
 						id: actionLogId,
 						user_id: userId,
-						type: 'screen_capture_screenshot',
+						type: 'screen_capture_analyze',
 						started_at: startedAt,
 						details: { storage_path: data.path },
 						tags: ['capture','screenshot'],
