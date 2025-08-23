@@ -43,8 +43,9 @@ const knowledgeSearchFetcher = async (params?: KnowledgeSearchParams): Promise<T
         );
 
         if (!semanticError && semanticData && Array.isArray(semanticData) && semanticData.length > 0) {
-          return semanticData.map((item: any) => ({
+          return semanticData.map((item) => ({
             ...item,
+            embedding: null, // SQL function doesn't return embedding for performance
             search_type: 'semantic' as const,
           }));
         }
@@ -135,8 +136,9 @@ const similarKnowledgeFetcher = async (key: string): Promise<ToolKnowledgeSearch
 
   if (error) throw error;
 
-  return Array.isArray(data) ? data.map((item: any) => ({
+  return Array.isArray(data) ? data.map((item) => ({
     ...item,
+    embedding: null, // SQL function doesn't return embedding for performance
     search_type: 'semantic' as const,
   })) : [];
 };
@@ -148,7 +150,7 @@ export function useKnowledgeSearch(params?: KnowledgeSearchParams) {
     : CACHE_KEYS.KNOWLEDGE;
 
   const { data, error, isLoading, mutate: mutateCurrent } = useSWR<ToolKnowledgeSearchResult[]>(
-    key,
+    typeof window !== 'undefined' ? key : null, // Only run on client-side
     () => knowledgeSearchFetcher(params),
     {
       revalidateOnFocus: false,
@@ -289,7 +291,7 @@ export function useKnowledge(knowledgeId: string) {
   const key = `${CACHE_KEYS.KNOWLEDGE_ITEM}:${knowledgeId}`;
 
   const { data, error, isLoading } = useSWR<ToolKnowledge>(
-    key,
+    typeof window !== 'undefined' ? key : null, // Only run on client-side
     knowledgeItemFetcher,
     {
       revalidateOnFocus: false,
@@ -313,7 +315,7 @@ export function useSimilarKnowledge(sourceId: string) {
   const key = `${CACHE_KEYS.KNOWLEDGE_SIMILAR}:${sourceId}`;
 
   const { data, error, isLoading } = useSWR<ToolKnowledgeSearchResult[]>(
-    sourceId ? key : null,
+    sourceId && typeof window !== 'undefined' ? key : null, // Only run on client-side
     similarKnowledgeFetcher,
     {
       revalidateOnFocus: false,

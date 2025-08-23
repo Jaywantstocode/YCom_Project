@@ -4,6 +4,7 @@ import useSWR, { mutate } from 'swr';
 import { getBrowserSupabaseClient } from '@/lib/supabase/client';
 import { generateLogSummaryEmbedding, generateSearchEmbedding } from '@/lib/ai/embedding';
 import { useAuth } from '@/context/AuthContext';
+import { type Json } from '@/lib/supabase/database.types';
 import { 
   type LogSummary, 
   type LogSummaryInsert, 
@@ -51,8 +52,9 @@ const logSummarySearchFetcher = async (
         );
 
         if (!semanticError && semanticData && Array.isArray(semanticData) && semanticData.length > 0) {
-          return semanticData.map((item: any) => ({
+          return semanticData.map((item) => ({
             ...item,
+            structured: item.structured as Json, // Type cast for compatibility
             embedding: null, // SQL function doesn't return embedding for performance
           }));
         }
@@ -155,7 +157,7 @@ export function useLogSummarySearch(params?: LogSearchParams) {
     : userId ? `${CACHE_KEYS.LOG_SUMMARY}:${userId}` : null;
 
   const { data, error, isLoading, mutate: mutateCurrent } = useSWR<LogSummarySearchResult[]>(
-    key,
+    key && typeof window !== 'undefined' ? key : null, // Only run on client-side
     () => logSummarySearchFetcher(params, userId),
     {
       revalidateOnFocus: false,
@@ -182,7 +184,7 @@ export function useLogSummarySearch(params?: LogSearchParams) {
         try {
           embedding = await generateLogSummaryEmbedding(
             logData.summary_text,
-            logData.structured as Record<string, any> | undefined,
+            logData.structured as Record<string, unknown> | undefined,
             logData.tags || []
           );
         } catch (embeddingError) {
@@ -241,7 +243,7 @@ export function useLogSummarySearch(params?: LogSearchParams) {
             const tags = updates.tags ?? currentLogSummary.tags ?? [];
             embedding = await generateLogSummaryEmbedding(
               summaryText,
-              structured as Record<string, any> | undefined,
+              structured as Record<string, unknown> | undefined,
               tags
             );
           }
@@ -319,7 +321,7 @@ export function useLogSummary(logId: string) {
   const key = user ? `${CACHE_KEYS.LOG_SUMMARY_ITEM}:${logId}` : null;
 
   const { data, error, isLoading } = useSWR<LogSummary>(
-    key,
+    key && typeof window !== 'undefined' ? key : null, // Only run on client-side
     logSummaryItemFetcher,
     {
       revalidateOnFocus: false,

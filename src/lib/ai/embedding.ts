@@ -53,7 +53,7 @@ export async function generateKnowledgeEmbedding(
  */
 export async function generateLogSummaryEmbedding(
   summaryText: string,
-  structured?: Record<string, any>,
+  structured?: Record<string, unknown>,
   tags: string[] = []
 ): Promise<string> {
   try {

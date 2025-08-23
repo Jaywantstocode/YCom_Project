@@ -35,10 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const supabase = getBrowserSupabaseClient();
+  const supabase = typeof window !== 'undefined' ? getBrowserSupabaseClient() : null;
 
   // プロファイルを取得する関数
   const fetchProfile = useCallback(async (userId: string) => {
+    if (!supabase) return null;
+    
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -60,6 +62,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 認証状態の変化を監視
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+    
     let mounted = true;
 
     const getInitialSession = async () => {
@@ -107,6 +114,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase, fetchProfile]);
 
   const signIn = useCallback(async (email: string, password: string) => {
+    if (!supabase) {
+      return { error: { message: 'Supabase client not available' } as AuthError };
+    }
     setLoading(true);
     const result = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
@@ -114,6 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const signUp = useCallback(async (email: string, password: string) => {
+    if (!supabase) {
+      return { error: { message: 'Supabase client not available' } as AuthError };
+    }
     setLoading(true);
     const result = await supabase.auth.signUp({ email, password });
     setLoading(false);
@@ -121,6 +134,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const signOut = useCallback(async () => {
+    if (!supabase) {
+      return { error: { message: 'Supabase client not available' } as AuthError };
+    }
     setLoading(true);
     const result = await supabase.auth.signOut();
     setLoading(false);
@@ -128,8 +144,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const updateProfile = useCallback(async (updates: Partial<Omit<Profile, 'id' | 'created_at'>>) => {
-    if (!user) {
-      return { error: new Error('No user logged in') };
+    if (!user || !supabase) {
+      return { error: new Error('No user logged in or Supabase client not available') };
     }
 
     try {

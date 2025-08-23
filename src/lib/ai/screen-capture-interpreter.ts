@@ -140,7 +140,7 @@ Please respond concisely in English.`
     let analysisData;
     try {
       analysisData = JSON.parse(content);
-    } catch (parseError) {
+    } catch {
       console.error('❌ Failed to parse JSON response:', content);
       throw new Error('Invalid JSON response from OpenAI API');
     }

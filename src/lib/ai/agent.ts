@@ -1,4 +1,4 @@
-import { getDefaultModel, getModelConfig } from './lm-models';
+import { getDefaultModel } from './lm-models';
 import OpenAI from 'openai';
 
 // 基本的なデータ型（フロントエンドに依存しない）
