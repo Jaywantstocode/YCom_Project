@@ -3,6 +3,7 @@ import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { getDefaultModel, getModelConfig } from './lm-models';
 import { getSupabaseServiceClient } from '../supabase/server';
+import { generateLogSummaryEmbedding } from './embedding';
 import { Database } from '../supabase/database.types';
 
 // AI analysis input parameters (all optional)
@@ -66,6 +67,19 @@ async function saveAnalysisResultToDatabase(
       .filter(word => word.length > 3)
       .slice(0, 5); // 最大5個のタグ
 
+    // 埋め込みを生成（summary + details + tags）
+    let embedding: string | null = null;
+    try {
+      const detailsForEmbedding = { capture_type: 'screen_summary' } as Record<string, unknown>;
+      embedding = await generateLogSummaryEmbedding(
+        analysisData.description,
+        detailsForEmbedding,
+        tags,
+      );
+    } catch (embedErr) {
+      console.warn('Embedding generation failed, proceeding without it:', embedErr);
+    }
+
     // Action log data structure: サマリのみ、detailsは空白
     const actionLogData: ActionLogInsert = {
       id: actionLogId,
@@ -75,7 +89,8 @@ async function saveAnalysisResultToDatabase(
       details: null,
       tags: tags.length > 0 ? tags : null,
       started_at: new Date(timestamp).toISOString(),
-      ended_at: new Date().toISOString()
+      ended_at: new Date().toISOString(),
+      embedding: embedding ?? null,
     };
 
     const { data, error } = await supabase

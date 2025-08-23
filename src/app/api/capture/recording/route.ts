@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServiceClient } from '@/lib/supabase/server';
+import { randomUUID } from 'crypto';
 
 export const runtime = 'nodejs';
 
@@ -14,6 +15,7 @@ export async function POST(request: Request) {
 		if (!(file instanceof File)) {
 			return NextResponse.json({ error: 'Missing file' }, { status: 400 });
 		}
+		const userId = (formData.get('user_id') as string) || '';
 		const supabase = getSupabaseServiceClient();
 		const arrayBuffer = await file.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
@@ -24,6 +26,29 @@ export async function POST(request: Request) {
 			.upload(path, buffer, { contentType: file.type || 'video/webm', upsert: false });
 		if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 		const { data: publicUrlData } = supabase.storage.from('captures').getPublicUrl(data.path);
+
+		// Create action_log and link video (no analysis for now)
+		try {
+			if (userId) {
+				const actionLogId = randomUUID();
+				await supabase.from('action_logs').upsert({
+					id: actionLogId,
+					user_id: userId,
+					type: 'screen_capture_recording',
+					started_at: new Date().toISOString(),
+					details: { storage_path: data.path },
+				});
+				await supabase.from('videos').insert({
+					user_id: userId,
+					storage_path: data.path,
+					mime_type: file.type || 'video/webm',
+					size_bytes: buffer.length,
+					captured_at: new Date().toISOString(),
+					action_log_id: actionLogId,
+				});
+			}
+		} catch {}
+
 		return NextResponse.json({ path: data.path, url: publicUrlData.publicUrl });
 	} catch (e) {
 		const message = e instanceof Error ? e.message : 'Unknown error';
