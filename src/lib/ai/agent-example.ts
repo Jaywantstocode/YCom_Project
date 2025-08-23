@@ -73,7 +73,7 @@ export async function executeAgentWithTools(
   try {
     // Use generateText with Google Gemini model
     const result = await generateText({
-      model: google(GoogleModel.GEMINI_2_0_FLASH),
+      model: google(GoogleModel.GEMINI_2_5_PRO),
       system: systemPrompt,
       messages: [
         {

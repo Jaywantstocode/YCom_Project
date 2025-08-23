@@ -5,6 +5,7 @@ import CapturePanel from "@/components/CapturePanel";
 import { Button } from "@/components/ui/button";
 import { Database } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -12,7 +13,10 @@ export default function Home() {
       <div className="mx-auto max-w-7xl px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">YCom - Capture & AI Assist</h1>
+          <div className="flex items-center gap-3">
+            <Image src="/logo.jpg" alt="watchful logo" width={32} height={32} className="h-8 w-8 rounded" />
+            <h1 className="text-2xl font-bold text-gray-900">watchful - Capture & AI Assist</h1>
+          </div>
           <Link href="/knowledge">
             <Button variant="outline" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
