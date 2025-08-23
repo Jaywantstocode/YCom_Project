@@ -127,7 +127,7 @@ async function saveIntervalSummary(
     user_id: userId,
     type: getActionLogType(interval),
     summary: summaryDescription,
-    details: {}, // 空のオブジェクト
+    details: null, // nullに設定
     source_log_ids: sourceLogIds,
     tags: tags.length > 0 ? tags : null,
     started_at: timeRange.start.toISOString(),
