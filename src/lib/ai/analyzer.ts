@@ -66,7 +66,7 @@ export async function analyzeScreenCapture(input: AnalysisInput): Promise<Analys
 
     // Analyze image using OpenAI Vision API
     const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
+      model: "gpt-4o",
       messages: [
         {
           role: "user",
@@ -128,84 +128,4 @@ Please respond concisely in Japanese.`
   }
 }
 
-/**
- * Quick analysis function for hackathon
- * Faster processing with simpler prompt
- */
-export async function quickAnalyze(input: AnalysisInput): Promise<AnalysisResult> {
-  const timestamp = input.timestamp || Date.now();
-  console.log('⚡ quickAnalyze started:', { hasImage: !!input.image, timestamp });
-  
-  try {
-    if (!input.image) {
-      return {
-        success: true,
-        timestamp,
-        analysis: {
-          description: 'Waiting...',
-          insights: ['Waiting for image'],
-        }
-      };
-    }
 
-    const openai = getOpenAIClient();
-    console.log('🔑 OpenAI client initialized');
-    
-    let imageUrl: string;
-    if (input.image instanceof Buffer) {
-      imageUrl = encodeImageToBase64(input.image);
-      console.log('🖼️ Image encoded to Base64:', { size: input.image.length });
-    } else {
-      imageUrl = input.image as string;
-      console.log('🔗 Using image URL:', { url: imageUrl.substring(0, 50) + '...' });
-    }
-
-    console.log('📡 Starting OpenAI API call...');
-    const response = await openai.chat.completions.create({
-      model: "gpt-4-vision-preview",
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: "Please describe what is happening on this screen in one line, concisely."
-            },
-            {
-              type: "image_url",
-              image_url: {
-                url: imageUrl,
-                detail: "low"
-              }
-            }
-          ]
-        }
-      ],
-      max_tokens: 100,
-      temperature: 0.5
-    });
-
-    const content = response.choices[0]?.message?.content || 'Screen analysis completed';
-    console.log('✨ OpenAI API response received:', { 
-      content: content.substring(0, 100) + '...',
-      length: content.length 
-    });
-
-    return {
-      success: true,
-      timestamp,
-      analysis: {
-        description: content,
-        insights: [content]
-      }
-    };
-
-  } catch (error) {
-    console.error('AI analysis error:', error);
-    return {
-      success: false,
-      timestamp,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
-}
