@@ -4,7 +4,7 @@
 import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
-import { analyzeScreenCapture } from '../src/lib/ai/analyzer';
+import { analyzeScreenCapture } from '../src/lib/ai/screen-capture-interpreter';
 
 // 設定
 const CAPTURED_FRAMES_DIR = path.join(__dirname, '..', 'captured-frames');

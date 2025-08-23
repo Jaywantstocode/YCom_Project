@@ -7,7 +7,7 @@ This module provides AI-powered screen capture analysis using various language m
 ### Using Different Models
 
 ```typescript
-import { analyzeScreenCapture, OpenAIModel } from './analyzer';
+import { analyzeScreenCapture, OpenAIModel } from './screen-capture-interpreter';
 
 // Use default model (GPT-4O for vision analysis)
 const result1 = await analyzeScreenCapture({
@@ -77,7 +77,7 @@ console.log(config);
 ### Main Analysis Function
 
 ```typescript
-import { analyzeScreenCapture } from './analyzer';
+import { analyzeScreenCapture } from './screen-capture-interpreter';
 
 const result = await analyzeScreenCapture({
   image: imageBuffer,           // Buffer or URL (optional)
