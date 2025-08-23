@@ -8,6 +8,7 @@ import { PRODUCTIVITY_AGENT_PROMPT } from './prompts';
 import { GoogleModel } from './lm-models';
 import { loadVideoData } from './video-loader';
 import { searchProductHunt } from '../tools/search-products';
+import { setPlan } from '../tools/set-plan';
 
 // Session data (from SessionContext)
 export interface SessionRecord {
@@ -75,10 +76,11 @@ export async function analyzeVideoBase64(videoBase64: string): Promise<Productiv
   try {
     const sizeInMB = (videoBase64.length * 0.75 / 1024 / 1024).toFixed(2);
     console.log('📊 動画サイズ（推定）:', sizeInMB, 'MB');
-    console.log('🤖 Gemini 2.0 Flashで動画解析開始');
+    console.log('🤖 Gemini 2.5 Flashで動画解析開始');
     
     // ツールを定義
     const tools = {
+      setPlan,
       searchProductHunt,
     };
     
@@ -94,15 +96,14 @@ export async function analyzeVideoBase64(videoBase64: string): Promise<Productiv
           content: [
             {
               type: 'text',
-              text: `この録画データを分析してください。以下の点に特に注目して具体的な改善提案を行ってください：
+              text: `この録画データを分析して、生産性向上のための改善提案を行ってください。
 
-1. 繰り返し作業の自動化機会
-2. キーボードショートカットで改善できる操作
-3. Product Huntで見つかる生産性向上ツール
-4. ワークフローの最適化ポイント
-5. 時間の無駄になっている操作
+必ず以下の順番で実行してください：
+1. PHASE 1: setPlanツールで分析結果と改善計画を設定
+2. PHASE 2: 必要に応じてsearchProductHuntツールで製品を検索
+3. PHASE 3: ユーザー向けの最終レポートを作成
 
-まずJSONフォーマットで分析結果を出力し、その後、productHuntSearchの提案に基づいて実際にsearchProductHuntツールを使ってProduct Huntを検索してください。`
+各フェーズを順番に実行し、最終的に実行可能なアクションプランを提供してください。`
             },
             {
               type: 'image',
@@ -142,6 +143,7 @@ export async function analyzeFrames(frames: string[]): Promise<ProductivityAnaly
     
     // ツールを定義
     const tools = {
+      setPlan,
       searchProductHunt,
     };
     
@@ -159,16 +161,14 @@ export async function analyzeFrames(frames: string[]): Promise<ProductivityAnaly
             {
               type: 'text',
               text: `以下のスクリーンショットは時系列順に抜き出された作業セッションのキーフレームです。
-全体的な作業パターンを分析し、生産性向上のための具体的な提案を行ってください。
+全体的な作業パターンを分析し、生産性向上のための改善提案を行ってください。
 
-特に以下の点に注目してください：
-1. 繰り返し作業の自動化機会
-2. キーボードショートカットで改善できる操作
-3. Product Huntで見つかる生産性向上ツール
-4. ワークフローの最適化ポイント
-5. 時間の無駄になっている操作
+必ず以下の順番で実行してください：
+1. PHASE 1: setPlanツールで分析結果と改善計画を設定
+2. PHASE 2: 必要に応じてsearchProductHuntツールで製品を検索
+3. PHASE 3: ユーザー向けの最終レポートを作成
 
-まずJSONフォーマットで分析結果を出力し、その後、productHuntSearchの提案に基づいて実際にsearchProductHuntツールを使ってProduct Huntを検索してください。`
+各フェーズを順番に実行し、最終的に実行可能なアクションプランを提供してください。`
             },
             ...frames.map((frame) => ({
               type: 'image' as const,
