@@ -37,6 +37,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const supabase = typeof window !== 'undefined' ? getBrowserSupabaseClient() : null;
 
+  // Local fallback for session persistence to smooth reloads
+  const LOCAL_SESSION_KEY = 'ycom.auth.session.v1';
+  const saveLocalSession = (sess: Session | null) => {
+    try {
+      if (typeof window === 'undefined') return;
+      if (sess) {
+        localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(sess));
+      } else {
+        localStorage.removeItem(LOCAL_SESSION_KEY);
+      }
+    } catch {}
+  };
+  const loadLocalSession = (): Session | null => {
+    try {
+      if (typeof window === 'undefined') return null;
+      const raw = localStorage.getItem(LOCAL_SESSION_KEY);
+      return raw ? (JSON.parse(raw) as Session) : null;
+    } catch {
+      return null;
+    }
+  };
+
   // プロファイルを取得する関数
   const fetchProfile = useCallback(async (userId: string) => {
     if (!supabase) return null;
@@ -71,13 +93,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const getInitialSession = async () => {
       const { data: { session: initialSession } } = await supabase.auth.getSession();
+      // Fallback to locally cached session to avoid logged-out flash on reload
+      let sess = initialSession ?? null;
+      if (!sess) {
+        const cached = loadLocalSession();
+        if (cached?.access_token && cached?.refresh_token) {
+          try {
+            const { data, error } = await supabase.auth.setSession({
+              access_token: (cached as unknown as { access_token: string }).access_token,
+              refresh_token: (cached as unknown as { refresh_token: string }).refresh_token,
+            });
+            if (!error && data.session) {
+              sess = data.session;
+            } else {
+              sess = cached; // last resort: use cached for UI only
+            }
+          } catch {
+            sess = cached; // UI fallback
+          }
+        }
+      }
       
       if (mounted) {
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
+        setSession(sess);
+        setUser(sess?.user ?? null);
         
-        if (initialSession?.user) {
-          const userProfile = await fetchProfile(initialSession.user.id);
+        if (sess?.user) {
+          const userProfile = await fetchProfile(sess.user.id);
           setProfile(userProfile);
         }
         
@@ -93,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         setSession(session);
         setUser(session?.user ?? null);
+        saveLocalSession(session ?? null);
 
         if (session?.user) {
           const userProfile = await fetchProfile(session.user.id);
