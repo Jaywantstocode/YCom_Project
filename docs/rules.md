@@ -1,0 +1,27 @@
+# Project Rules and Architecture
+
+- Caching: Prefer cached singletons for clients (Supabase client/server). Memoize where appropriate.
+- Env: Use `.env.local` variables. Do not hardcode secrets. Required:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+- Storage: Supabase Storage bucket `captures` (public) for uploads. Client uploads via `/api/upload`.
+- Local Save: For debugging, screenshots and recordings also download locally when toggle is enabled.
+- Capture:
+  - Screenshot: `html2canvas(document.body)` → PNG
+  - Recording: `MediaRecorder(getDisplayMedia)` → WEBM
+- API:
+  - `POST /api/upload`: multipart/form-data `file` → stores to `captures/` and returns public URL.
+- UI Layout:
+  - Left: Session history (start/stop, list, Clear)
+  - Center: Start/Stop capture; after start, AI Logs + Tips stream
+  - Bottom-right: Account widget placeholder
+- Session State:
+  - LocalStorage-backed `SessionContext` keeps sessions, logs, tips
+  - Orchestrator simulates AI logs and tips during active session
+- Tailwind:
+  - Use rounded-lg/xl, subtle borders, backdrop-blur, gradients, and focus rings
+- Future:
+  - Auth + RLS for private uploads
+  - OCR + LLM integration for real logs/tips
+  - Wiki posting integration (e.g., Slack/Confluence/Notion)
