@@ -1,40 +1,30 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useSessionContext } from '@/context/SessionContext';
 import AgentLog from './AgentLog';
 import CaptureClient from './CaptureClient';
-import { startOrchestrator, type OrchestratorHandle } from '@/lib/agent/orchestrator';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 export default function CapturePanel() {
 	const sessionCtx = useSessionContext();
 	const [started, setStarted] = useState(false);
-	const orchestratorRef = useRef<OrchestratorHandle | null>(null);
-
-	useEffect(() => {
-		if (!started) return;
-		return () => {
-			orchestratorRef.current?.stop();
-			orchestratorRef.current = null;
-		};
-	}, [started]);
 
 	const handleStart = useCallback(() => {
 		sessionCtx.startSession();
 		setStarted(true);
 		setTimeout(() => {
-			orchestratorRef.current?.stop();
-			orchestratorRef.current = startOrchestrator(sessionCtx);
+			sessionCtx.appendLog({ level: 'info', message: 'Analyzing screen...' });
+			setTimeout(() => {
+				sessionCtx.appendTip({ title: 'Try keyboard shortcuts', detail: 'Press ⌘K to open the command palette.' });
+			}, 1200);
 		}, 0);
 	}, [sessionCtx]);
 
 	const handleStop = useCallback(() => {
 		sessionCtx.stopSession();
 		setStarted(false);
-		orchestratorRef.current?.stop();
-		orchestratorRef.current = null;
 	}, [sessionCtx]);
 
 	return (
