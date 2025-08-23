@@ -41,11 +41,11 @@ export default function CapturePanel() {
 				<div className="flex items-center gap-3">
 					{!started ? (
 						<button onClick={handleStart} className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
-							Start Capture
+							Start Session
 						</button>
 					) : (
 						<button onClick={handleStop} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">
-							Stop
+							Stop Session
 						</button>
 					)}
 				</div>
