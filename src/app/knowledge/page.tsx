@@ -1,14 +1,10 @@
-"use client";
-
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import dynamicImport from 'next/dynamic';
 
-// Force dynamic rendering to avoid SSR issues with Supabase client
-export const dynamic = 'force-dynamic';
+// Use default rendering; let client components render on the client
 
-// Dynamically import KnowledgeSearch to avoid SSR issues
+// Dynamically import KnowledgeSearch with client-only hydration
 const KnowledgeSearch = dynamicImport(() => import('@/components/KnowledgeSearch').then(mod => ({ default: mod.KnowledgeSearch })), {
-  ssr: false,
   loading: () => (
     <div className="flex items-center justify-center py-12">
       <div className="h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />

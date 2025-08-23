@@ -8,7 +8,3 @@ export async function POST(req: NextRequest) {
 	subscriptions.push(subscription);
 	return NextResponse.json({ message: 'Subscription saved' });
 }
-
-export function getSubscriptions(): unknown[] {
-	return subscriptions;
-}
