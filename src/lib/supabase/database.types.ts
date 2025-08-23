@@ -374,6 +374,56 @@ export type Database = {
         Args: { "": unknown[] }
         Returns: number
       }
+      search_tool_knowledge_semantic: {
+        Args: {
+          query_embedding: string
+          match_threshold?: number
+          match_count?: number
+        }
+        Returns: {
+          id: string
+          title: string | null
+          url: string | null
+          tags: string[] | null
+          content: string | null
+          similarity: number
+          created_at: string | null
+        }[]
+      }
+      search_log_summary_semantic: {
+        Args: {
+          query_embedding: string
+          user_id_filter: string
+          match_threshold?: number
+          match_count?: number
+        }
+        Returns: {
+          id: string
+          user_id: string
+          action_log_id: string
+          summary_text: string | null
+          structured: unknown | null
+          tags: string[] | null
+          similarity: number
+          created_at: string | null
+        }[]
+      }
+      get_similar_tool_knowledge: {
+        Args: {
+          source_id: string
+          match_threshold?: number
+          match_count?: number
+        }
+        Returns: {
+          id: string
+          title: string | null
+          url: string | null
+          tags: string[] | null
+          content: string | null
+          similarity: number
+          created_at: string | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
