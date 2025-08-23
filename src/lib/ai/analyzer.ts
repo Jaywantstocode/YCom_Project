@@ -15,10 +15,29 @@ export interface AnalysisResult {
   analysis?: {
     description: string;
     insights: string[];
-    actionSuggestions?: string[];
   };
   error?: string;
 }
+
+// JSON schema for structured output
+const analysisSchema = {
+  type: "object",
+  properties: {
+    description: {
+      type: "string",
+      description: "Concise summary of what is displayed on the screen"
+    },
+    insights: {
+      type: "array",
+      items: {
+        type: "string"
+      },
+      description: "List of specific findings and observations from the screen analysis"
+    }
+  },
+  required: ["description", "insights"],
+  additionalProperties: false
+} as const;
 
 // Initialize OpenAI client
 function getOpenAIClient(): OpenAI {
@@ -70,7 +89,7 @@ export async function analyzeScreenCapture(input: AnalysisInput): Promise<Analys
     const modelConfig = getModelConfig(modelId);
     console.log('🤖 Using model:', { modelId, name: modelConfig?.name });
 
-    // Analyze image using OpenAI Vision API
+    // Analyze image using OpenAI Vision API with structured output
     const response = await openai.chat.completions.create({
       model: modelId,
       messages: [
@@ -83,10 +102,10 @@ export async function analyzeScreenCapture(input: AnalysisInput): Promise<Analys
 
 1. Main content or applications displayed on the screen
 2. What the user appears to be doing
-3. Suggestions for efficiency or improvements if any
-4. Notable elements or changes if any
+3. Notable elements or changes if any
+4. Suggestions for efficiency or improvements if any
 
-Please respond concisely in Japanese.`
+Please respond concisely in English.`
             },
             {
               type: "image_url",
@@ -98,8 +117,14 @@ Please respond concisely in Japanese.`
           ]
         }
       ],
-      max_completion_tokens: Math.min(modelConfig?.maxTokens || 4096, 2000), // Increased for GPT-5 reasoning tokens
-      // temperature: GPT-5 only supports default temperature (1)
+      max_completion_tokens: Math.min(modelConfig?.maxTokens || 4096, 2000),
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "screen_analysis",
+          schema: analysisSchema
+        }
+      }
     });
 
     console.log('🔍 OpenAI API response structure:', JSON.stringify(response, null, 2));
@@ -111,20 +136,21 @@ Please respond concisely in Japanese.`
       throw new Error('Empty response from OpenAI API');
     }
 
-    // Parse and structure the response
-    const lines = content.split('\n').filter(line => line.trim());
-    const description = lines[0] || 'Screen analysis completed';
-    const insights = lines.slice(1).filter(line => line.length > 10);
+    // Parse structured JSON response
+    let analysisData;
+    try {
+      analysisData = JSON.parse(content);
+    } catch (parseError) {
+      console.error('❌ Failed to parse JSON response:', content);
+      throw new Error('Invalid JSON response from OpenAI API');
+    }
 
     return {
       success: true,
       timestamp,
       analysis: {
-        description,
-        insights,
-        actionSuggestions: insights.filter(insight => 
-          insight.includes('提案') || insight.includes('改善') || insight.includes('おすすめ')
-        )
+        description: analysisData.description || 'Screen analysis completed',
+        insights: analysisData.insights || []
       }
     };
 
