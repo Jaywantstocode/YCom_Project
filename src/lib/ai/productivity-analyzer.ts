@@ -6,7 +6,8 @@ import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { PRODUCTIVITY_AGENT_PROMPT } from './prompts';
 import { GoogleModel } from './lm-models';
-import { readFileSync } from 'fs';
+import { loadVideoData } from './video-loader';
+import { searchProductHunt } from '../tools/search-products';
 
 // Session data (from SessionContext)
 export interface SessionRecord {
@@ -15,7 +16,7 @@ export interface SessionRecord {
   stoppedAt?: number;
   log: AgentLogItem[];
   tips: AgentTip[];
-  videoPath?: string; // 動画ファイルパス
+  videoPath?: string; // 動画ファイルパス（ローカル or Supabase）
   videoBase64?: string; // Base64エンコードされた動画
 }
 
@@ -41,17 +42,22 @@ export interface ProductivityAnalysis {
 }
 
 /**
- * Analyze video file with Gemini 2.0 Flash
+ * Analyze video from path (local file, Supabase storage, or URL)
  */
-export async function analyzeVideoFile(videoPath: string): Promise<ProductivityAnalysis> {
+export async function analyzeVideoFromPath(path: string): Promise<ProductivityAnalysis> {
   try {
-    console.log('🎥 動画ファイルを解析:', videoPath);
+    console.log('🎥 動画を読み込み中:', path);
     
-    // 動画ファイルを読み込み
-    const videoBuffer = readFileSync(videoPath);
-    const videoBase64 = videoBuffer.toString('base64');
+    // パスから動画データを取得（自動圧縮・フレーム抽出対応）
+    const result = await loadVideoData(path);
     
-    return analyzeVideoBase64(videoBase64);
+    if (result.type === 'video') {
+      // 動画として解析
+      return analyzeVideoBase64(result.data as string);
+    } else {
+      // フレームとして解析
+      return analyzeFrames(result.data as string[]);
+    }
   } catch (error) {
     console.error('❌ 動画読み込みエラー:', error);
     return {
@@ -63,14 +69,21 @@ export async function analyzeVideoFile(videoPath: string): Promise<ProductivityA
 }
 
 /**
- * Analyze Base64 encoded video with Gemini 2.0 Flash
+ * Analyze video from Base64 encoded data
  */
 export async function analyzeVideoBase64(videoBase64: string): Promise<ProductivityAnalysis> {
   try {
+    const sizeInMB = (videoBase64.length * 0.75 / 1024 / 1024).toFixed(2);
+    console.log('📊 動画サイズ（推定）:', sizeInMB, 'MB');
     console.log('🤖 Gemini 2.0 Flashで動画解析開始');
     
+    // ツールを定義
+    const tools = {
+      searchProductHunt,
+    };
+    
     const result = await generateText({
-      model: google(GoogleModel.GEMINI_2_0_FLASH),
+      model: google(GoogleModel.GEMINI_2_5_FLASH),
       messages: [
         {
           role: 'system',
@@ -89,7 +102,7 @@ export async function analyzeVideoBase64(videoBase64: string): Promise<Productiv
 4. ワークフローの最適化ポイント
 5. 時間の無駄になっている操作
 
-必ずJSONフォーマットで回答してください。`
+まずJSONフォーマットで分析結果を出力し、その後、productHuntSearchの提案に基づいて実際にsearchProductHuntツールを使ってProduct Huntを検索してください。`
             },
             {
               type: 'image',
@@ -98,6 +111,7 @@ export async function analyzeVideoBase64(videoBase64: string): Promise<Productiv
           ]
         }
       ],
+      tools,
       temperature: 0.7,
     });
     
@@ -118,29 +132,22 @@ export async function analyzeVideoBase64(videoBase64: string): Promise<Productiv
   }
 }
 
+
 /**
- * Analyze sessions with optional video data
+ * Analyze multiple frames extracted from video
  */
-export async function analyzeProductivitySessions(sessions: SessionRecord[]): Promise<ProductivityAnalysis> {
+export async function analyzeFrames(frames: string[]): Promise<ProductivityAnalysis> {
   try {
-    // 動画データがある場合は最初のセッションの動画を解析
-    const sessionWithVideo = sessions.find(s => s.videoPath || s.videoBase64);
+    console.log(`🖼️ ${frames.length}個のフレームを解析中`);
     
-    if (sessionWithVideo) {
-      if (sessionWithVideo.videoPath) {
-        return analyzeVideoFile(sessionWithVideo.videoPath);
-      } else if (sessionWithVideo.videoBase64) {
-        return analyzeVideoBase64(sessionWithVideo.videoBase64);
-      }
-    }
+    // ツールを定義
+    const tools = {
+      searchProductHunt,
+    };
     
-    // 動画がない場合は従来のログベース解析
-    const sessionData = formatSessions(sessions);
-    
-    console.log('🤖 ログデータから生産性を解析');
-    
+    // フレームをGeminiに送信
     const result = await generateText({
-      model: google(GoogleModel.GEMINI_2_0_FLASH),
+      model: google(GoogleModel.GEMINI_2_5_FLASH),
       messages: [
         {
           role: 'system',
@@ -148,41 +155,45 @@ export async function analyzeProductivitySessions(sessions: SessionRecord[]): Pr
         },
         {
           role: 'user',
-          content: `以下のセッションログを分析し、生産性向上のための具体的な提案を行ってください：
+          content: [
+            {
+              type: 'text',
+              text: `以下のスクリーンショットは時系列順に抜き出された作業セッションのキーフレームです。
+全体的な作業パターンを分析し、生産性向上のための具体的な提案を行ってください。
 
-${sessionData}
+特に以下の点に注目してください：
+1. 繰り返し作業の自動化機会
+2. キーボードショートカットで改善できる操作
+3. Product Huntで見つかる生産性向上ツール
+4. ワークフローの最適化ポイント
+5. 時間の無駄になっている操作
 
-必ずJSONフォーマットで回答してください。`
+まずJSONフォーマットで分析結果を出力し、その後、productHuntSearchの提案に基づいて実際にsearchProductHuntツールを使ってProduct Huntを検索してください。`
+            },
+            ...frames.map((frame) => ({
+              type: 'image' as const,
+              image: `data:image/jpeg;base64,${frame}`
+            }))
+          ]
         }
       ],
+      tools,
       temperature: 0.7,
     });
-
+    
+    console.log('📝 フレーム解析完了');
+    
     return {
       success: true,
       analysis: result.text,
     };
 
   } catch (error) {
-    console.error('❌ Analysis error:', error);
+    console.error('❌ フレーム解析エラー:', error);
     return {
       success: false,
       analysis: '',
       error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
-}
-
-function formatSessions(sessions: SessionRecord[]): string {
-  return sessions.map(session => {
-    const duration = session.stoppedAt ? 
-      Math.round((session.stoppedAt - session.startedAt) / 60000) : 
-      'ongoing';
-    
-    return `Session ID: ${session.id}
-Duration: ${duration} minutes
-Logs: ${session.log.length} entries
-Tips: ${session.tips.length} entries
-Recent logs: ${session.log.slice(-5).map(log => `[${log.level}] ${log.message}`).join(', ')}`;
-  }).join('\n\n');
 }

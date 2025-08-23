@@ -19,7 +19,9 @@ export enum AnthropicModel {
 
 // Google model identifiers
 export enum GoogleModel {
-  GEMINI_2_0_FLASH = "gemini-2.0-flash-exp",
+  GEMINI_2_0_FLASH = "gemini-2.0-flash",
+  GEMINI_2_5_FLASH = "gemini-2.5-flash",
+  GEMINI_2_5_PRO = "gemini-2.5-pro",
   GEMINI_1_5_FLASH = "gemini-1.5-flash",
   GEMINI_1_5_PRO = "gemini-1.5-pro",
 }
@@ -108,6 +110,24 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     supportsVision: true,
     maxTokens: 8192,
     costPerToken: 0.0001,
+  },
+  [GoogleModel.GEMINI_2_5_FLASH]: {
+    id: GoogleModel.GEMINI_2_5_FLASH,
+    provider: ModelProvider.GOOGLE,
+    name: "Gemini 2.5 Flash",
+    description: "Latest fast Google model with improved capabilities",
+    supportsVision: true,
+    maxTokens: 16384,
+    costPerToken: 0.00012,
+  },
+  [GoogleModel.GEMINI_2_5_PRO]: {
+    id: GoogleModel.GEMINI_2_5_PRO,
+    provider: ModelProvider.GOOGLE,
+    name: "Gemini 2.5 Pro",
+    description: "Most advanced Google model with superior reasoning",
+    supportsVision: true,
+    maxTokens: 32768,
+    costPerToken: 0.0003,
   },
   [GoogleModel.GEMINI_1_5_FLASH]: {
     id: GoogleModel.GEMINI_1_5_FLASH,
