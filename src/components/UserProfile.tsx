@@ -49,13 +49,13 @@ export function UserProfile() {
           <CardContent className="p-0">
             <div className="flex items-center gap-3">
               <div className={`h-2.5 w-2.5 rounded-full bg-gray-400`} />
-              <div className="text-sm text-gray-600">未ログイン</div>
+              <div className="text-sm text-gray-600">Signed out</div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAuthModal(true)}
               >
-                ログイン
+                Sign in
               </Button>
             </div>
           </CardContent>
@@ -68,7 +68,7 @@ export function UserProfile() {
     );
   }
 
-  const displayName = profile?.display_name || user.email?.split('@')[0] || 'ユーザー';
+  const displayName = profile?.display_name || user.email?.split('@')[0] || 'User';
   const avatarUrl = profile?.avatar_url;
 
   return (
@@ -93,14 +93,14 @@ export function UserProfile() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>マイアカウント</DropdownMenuLabel>
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="cursor-pointer"
               onClick={() => setShowProfileSettings(true)}
             >
               <Settings className="mr-2 h-4 w-4" />
-              <span>設定</span>
+              <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
@@ -109,7 +109,7 @@ export function UserProfile() {
               disabled={signingOut}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              <span>{signingOut ? 'ログアウト中...' : 'ログアウト'}</span>
+              <span>{signingOut ? 'Signing out...' : 'Sign out'}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

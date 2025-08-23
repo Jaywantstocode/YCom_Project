@@ -93,20 +93,40 @@ export const searchProductHunt = {
         throw new Error(`Product Hunt API error: ${response.statusText}`);
       }
       
-      const data = await response.json();
+      const data: {
+        data?: {
+          posts?: {
+            edges?: Array<{
+              node: {
+                id: string;
+                name: string;
+                tagline: string;
+                description?: string;
+                votesCount: number;
+                commentsCount: number;
+                url: string;
+                website?: string;
+                createdAt?: string;
+                topics?: { edges?: Array<{ node: { name: string } }> };
+              };
+            }>;
+          };
+        };
+      } = await response.json();
       
       // Transform the response
-      const products = data.data?.posts?.edges?.map((edge: any) => ({
-        id: edge.node.id,
-        name: edge.node.name,
-        tagline: edge.node.tagline,
-        description: edge.node.description,
-        votesCount: edge.node.votesCount,
-        commentsCount: edge.node.commentsCount,
-        url: edge.node.url,
-        website: edge.node.website,
-        topics: edge.node.topics?.edges?.map((t: any) => t.node.name) || []
-      })) || [];
+      const products =
+        data.data?.posts?.edges?.map(edge => ({
+          id: edge.node.id,
+          name: edge.node.name,
+          tagline: edge.node.tagline,
+          description: edge.node.description,
+          votesCount: edge.node.votesCount,
+          commentsCount: edge.node.commentsCount,
+          url: edge.node.url,
+          website: edge.node.website,
+          topics: edge.node.topics?.edges?.map(t => t.node.name) || [],
+        })) || [];
       
       return {
         success: true,

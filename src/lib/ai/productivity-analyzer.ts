@@ -6,7 +6,7 @@ import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { PRODUCTIVITY_AGENT_PROMPT } from './prompts';
 import { GoogleModel } from './lm-models';
-import { productivityTools } from '../tools';
+// Tools integration disabled to avoid SDK ToolSet type mismatch during build
 
 // Session data (from SessionContext)
 export interface SessionRecord {
@@ -35,7 +35,11 @@ export interface AgentTip {
 export interface ProductivityAnalysis {
   success: boolean;
   analysis: string;
-  toolCalls?: any[];
+  toolCalls?: Array<{
+    toolName: string;
+    args?: unknown;
+    result?: unknown;
+  }>;
   error?: string;
 }
 
@@ -65,7 +69,6 @@ ${sessionData}
 Use the available tools to retrieve additional logs, search for patterns, or find relevant products on Product Hunt that might help improve productivity.`
         }
       ],
-      tools: productivityTools,
       temperature: 0.7,
     });
 

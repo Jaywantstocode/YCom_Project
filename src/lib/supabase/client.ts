@@ -3,14 +3,6 @@ import { type Database } from './database.types';
 
 let cachedClient: SupabaseClient<Database> | null = null;
 
-function getEnv(name: string): string {
-	const value = process.env[name];
-	if (!value) {
-		throw new Error(`Missing environment variable: ${name}`);
-	}
-	return value;
-}
-
 export function getBrowserSupabaseClient(): SupabaseClient<Database> {
 	if (typeof window === 'undefined') {
 		throw new Error('getBrowserSupabaseClient must be called on the client');

@@ -22,7 +22,7 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
           <CardContent className="p-6">
             <div className="flex items-center justify-center">
               <div className="h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              <span className="ml-2">認証状態を確認中...</span>
+              <span className="ml-2">Checking authentication status...</span>
             </div>
           </CardContent>
         </Card>
@@ -40,14 +40,14 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
         <div className="flex items-center justify-center min-h-screen">
           <Card className="w-full max-w-md mx-4">
             <CardHeader>
-              <CardTitle className="text-center">ログインが必要です</CardTitle>
+              <CardTitle className="text-center">Sign in required</CardTitle>
             </CardHeader>
             <CardContent className="text-center space-y-4">
               <p className="text-gray-600">
-                この機能をご利用いただくには、ログインが必要です。
+                You must be signed in to use this feature.
               </p>
               <Button onClick={() => setShowAuthModal(true)}>
-                ログイン
+                Sign in
               </Button>
             </CardContent>
           </Card>

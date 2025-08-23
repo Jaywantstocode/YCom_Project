@@ -47,12 +47,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError('パスワードが一致しません');
+      setError('Passwords do not match');
       return;
     }
 
     if (password.length < 6) {
-      setError('パスワードは6文字以上で入力してください');
+      setError('Password must be at least 6 characters');
       return;
     }
 
@@ -68,7 +68,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
-      alert('サインアップが完了しました。確認メールをご確認ください。');
+      alert('Sign up successful. Please check your email for a confirmation link.');
     }
     
     setLoading(false);
@@ -80,19 +80,19 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <Card className="w-full max-w-md mx-4">
         <CardHeader>
-          <CardTitle className="text-center">YCom にログイン</CardTitle>
+          <CardTitle className="text-center">Sign in to YCom</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'signin' | 'signup')}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">ログイン</TabsTrigger>
-              <TabsTrigger value="signup">サインアップ</TabsTrigger>
+              <TabsTrigger value="signin">Sign in</TabsTrigger>
+              <TabsTrigger value="signup">Sign up</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">メールアドレス</Label>
+                  <Label htmlFor="signin-email">Email</Label>
                   <Input
                     id="signin-email"
                     type="email"
@@ -104,7 +104,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">パスワード</Label>
+                  <Label htmlFor="signin-password">Password</Label>
                   <Input
                     id="signin-password"
                     type="password"
@@ -123,10 +123,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1" disabled={loading}>
-                    {loading ? 'ログイン中...' : 'ログイン'}
+                    {loading ? 'Signing in...' : 'Sign in'}
                   </Button>
                   <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-                    キャンセル
+                    Cancel
                   </Button>
                 </div>
               </form>
@@ -135,7 +135,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">メールアドレス</Label>
+                  <Label htmlFor="signup-email">Email</Label>
                   <Input
                     id="signup-email"
                     type="email"
@@ -147,7 +147,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">パスワード</Label>
+                  <Label htmlFor="signup-password">Password</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -160,7 +160,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-confirm">パスワード確認</Label>
+                  <Label htmlFor="signup-confirm">Confirm password</Label>
                   <Input
                     id="signup-confirm"
                     type="password"
@@ -180,10 +180,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
                 <div className="flex gap-2">
                   <Button type="submit" className="flex-1" disabled={loading}>
-                    {loading ? 'アカウント作成中...' : 'アカウント作成'}
+                    {loading ? 'Creating account...' : 'Create account'}
                   </Button>
                   <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-                    キャンセル
+                    Cancel
                   </Button>
                 </div>
               </form>
