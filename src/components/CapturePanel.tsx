@@ -5,6 +5,8 @@ import { useSessionContext } from '@/context/SessionContext';
 import AgentLog from './AgentLog';
 import CaptureClient from './CaptureClient';
 import { startOrchestrator, type OrchestratorHandle } from '@/lib/agent/orchestrator';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function CapturePanel() {
 	const sessionCtx = useSessionContext();
@@ -40,19 +42,21 @@ export default function CapturePanel() {
 			<div className="max-w-3xl mx-auto h-full flex flex-col gap-4">
 				<div className="flex items-center gap-3">
 					{!started ? (
-						<button onClick={handleStart} className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">
-							Start Capture
-						</button>
+						<Button onClick={handleStart}>Start Session</Button>
 					) : (
-						<button onClick={handleStop} className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700">
-							Stop
-						</button>
+						<Button onClick={handleStop} variant="destructive">Stop Session</Button>
 					)}
 				</div>
 				{started ? (
-					<div className="flex-1 overflow-auto border rounded p-3">
-						<AgentLog />
-					</div>
+					<Card className="flex-1 overflow-hidden">
+						<CardHeader>
+							<CardTitle>AI Logs</CardTitle>
+							<CardDescription>Real-time assistant output and tips</CardDescription>
+						</CardHeader>
+						<CardContent className="h-full overflow-auto">
+							<AgentLog />
+						</CardContent>
+					</Card>
 				) : (
 					<div className="">
 						<CaptureClient />
