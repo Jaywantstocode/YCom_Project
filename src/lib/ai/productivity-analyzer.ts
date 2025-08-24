@@ -86,12 +86,12 @@ export async function saveProductivityRecommendation(userAdvice: string, userId:
     });
     
     if (saveResult.success) {
-      console.log('✅ レコメンドをデータベースに保存しました:', saveResult.id);
+      console.log('✅ Recommendation saved to database:', saveResult.id);
     } else {
-      console.warn('⚠️ レコメンド保存に失敗:', saveResult.error);
+      console.warn('⚠️ Failed to save recommendation:', saveResult.error);
     }
   } catch (error) {
-    console.warn('⚠️ レコメンド保存処理エラー:', error);
+    console.warn('⚠️ Error saving recommendation:', error);
   }
 }
 
@@ -110,10 +110,10 @@ export async function sendProductivityNotification(userAdvice: string): Promise<
         body: userAdvice
       })
     });
-    console.log('📱 生産性アドバイス通知を送信しました');
+    console.log('📱 Productivity advice notification sent');
   } catch (error) {
-    console.warn('⚠️ 通知送信に失敗:', error);
-    // 通知エラーは分析結果に影響しない
+    console.warn('⚠️ Failed to send notification:', error);
+    // Notification errors do not affect analysis results
   }
 }
 
@@ -124,8 +124,8 @@ export interface SessionRecord {
   stoppedAt?: number;
   log: AgentLogItem[];
   tips: AgentTip[];
-  videoPath?: string; // 動画ファイルパス（ローカル or Supabase）
-  videoBase64?: string; // Base64エンコードされた動画
+  videoPath?: string; // Video file path (local or Supabase)
+  videoBase64?: string; // Base64 encoded video
 }
 
 export interface AgentLogItem {
@@ -154,20 +154,20 @@ export interface ProductivityAnalysis {
  */
 export async function analyzeVideoFromPath(path: string, userId?: string): Promise<ProductivityAnalysis> {
   try {
-    console.log('🎥 動画を読み込み中:', path);
+    console.log('🎥 Loading video:', path);
     
-    // パスから動画データを取得（自動圧縮・フレーム抽出対応）
+    // Get video data from path (with automatic compression and frame extraction support)
     const result = await loadVideoData(path);
     
     if (result.type === 'video') {
-      // 動画として解析
+      // Analyze as video
       return analyzeVideoBase64(result.data as string, userId);
     } else {
-      // フレームとして解析
+      // Analyze as frames
       return analyzeFrames(result.data as string[], userId);
     }
   } catch (error) {
-    console.error('❌ 動画読み込みエラー:', error);
+    console.error('❌ Video loading error:', error);
     return {
       success: false,
       analysis: null,
@@ -182,8 +182,8 @@ export async function analyzeVideoFromPath(path: string, userId?: string): Promi
 export async function analyzeVideoBase64(videoBase64: string, userId?: string): Promise<ProductivityAnalysis> {
   try {
     const sizeInMB = (videoBase64.length * 0.75 / 1024 / 1024).toFixed(2);
-    console.log('📊 動画サイズ（推定）:', sizeInMB, 'MB');
-    console.log('🤖 動画解析開始');
+    console.log('📊 Video size (estimated):', sizeInMB, 'MB');
+    console.log('🤖 Starting video analysis');
     
     const result = await generateText({
       model: google(GoogleModel.GEMINI_2_5_PRO),
@@ -197,7 +197,7 @@ export async function analyzeVideoBase64(videoBase64: string, userId?: string): 
           content: [
             {
               type: 'text',
-              text: 'この録画データを分析してください。'
+              text: 'Please analyze this recorded data.'
             },
             {
               type: 'image',
@@ -209,7 +209,7 @@ export async function analyzeVideoBase64(videoBase64: string, userId?: string): 
       temperature: 0.3,
     });
     
-    console.log('📝 解析完了');
+    console.log('📝 Analysis complete');
     
     // Parse JSON from response
     let analysis;
@@ -218,21 +218,21 @@ export async function analyzeVideoBase64(videoBase64: string, userId?: string): 
       const jsonText = result.text.replace(/```json\n?|```\n?/g, '').trim();
       analysis = JSON.parse(jsonText);
     } catch (parseError) {
-      console.error('❌ JSON解析エラー:', parseError);
+      console.error('❌ JSON parsing error:', parseError);
       // Return raw text if JSON parsing fails
       analysis = { rawText: result.text };
     }
     
-    // 分析完了時にユーザーアドバイスを保存して通知
+    // Save and notify user advice when analysis is complete
     if (analysis && analysis.userAdvice) {
-      // まずSupabaseにレコメンドを保存
+      // First save recommendation to Supabase
       if (userId) {
         await saveProductivityRecommendation(analysis.userAdvice, userId);
       } else {
-        console.warn('⚠️ ユーザーIDが不明なため、レコメンドの保存をスキップします');
+        console.warn('⚠️ User ID unknown, skipping recommendation save');
       }
       
-      // 次に通知を送信
+      // Then send notification
       await sendProductivityNotification(analysis.userAdvice);
     }
     
@@ -242,7 +242,7 @@ export async function analyzeVideoBase64(videoBase64: string, userId?: string): 
     };
 
   } catch (error) {
-    console.error('❌ 解析エラー:', error);
+    console.error('❌ Analysis error:', error);
     return {
       success: false,
       analysis: null,
@@ -257,7 +257,7 @@ export async function analyzeVideoBase64(videoBase64: string, userId?: string): 
  */
 export async function analyzeFrames(frames: string[], userId?: string): Promise<ProductivityAnalysis> {
   try {
-    console.log(`🖼️ ${frames.length}個のフレームを解析中`);
+    console.log(`🖼️ Analyzing ${frames.length} frames`);
     
     const result = await generateText({
       model: google(GoogleModel.GEMINI_2_5_PRO),
@@ -271,7 +271,7 @@ export async function analyzeFrames(frames: string[], userId?: string): Promise<
           content: [
             {
               type: 'text',
-              text: '以下のスクリーンショットを分析してください。'
+              text: 'Please analyze the following screenshots.'
             },
             ...frames.map((frame) => ({
               type: 'image' as const,
@@ -283,7 +283,7 @@ export async function analyzeFrames(frames: string[], userId?: string): Promise<
       temperature: 0.3,
     });
     
-    console.log('📝 フレーム解析完了');
+    console.log('📝 Frame analysis complete');
     
     // Parse JSON from response
     let analysis;
@@ -292,21 +292,21 @@ export async function analyzeFrames(frames: string[], userId?: string): Promise<
       const jsonText = result.text.replace(/```json\n?|```\n?/g, '').trim();
       analysis = JSON.parse(jsonText);
     } catch (parseError) {
-      console.error('❌ JSON解析エラー:', parseError);
+      console.error('❌ JSON parsing error:', parseError);
       // Return raw text if JSON parsing fails
       analysis = { rawText: result.text };
     }
     
-    // 分析完了時にユーザーアドバイスを保存して通知
+    // Save and notify user advice when analysis is complete
     if (analysis && analysis.userAdvice) {
-      // まずSupabaseにレコメンドを保存
+      // First save recommendation to Supabase
       if (userId) {
         await saveProductivityRecommendation(analysis.userAdvice, userId);
       } else {
-        console.warn('⚠️ ユーザーIDが不明なため、レコメンドの保存をスキップします');
+        console.warn('⚠️ User ID unknown, skipping recommendation save');
       }
       
-      // 次に通知を送信
+      // Then send notification
       await sendProductivityNotification(analysis.userAdvice);
     }
     
@@ -316,7 +316,7 @@ export async function analyzeFrames(frames: string[], userId?: string): Promise<
     };
 
   } catch (error) {
-    console.error('❌ フレーム解析エラー:', error);
+    console.error('❌ Frame analysis error:', error);
     return {
       success: false,
       analysis: null,

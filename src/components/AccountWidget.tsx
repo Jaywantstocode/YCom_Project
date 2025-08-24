@@ -26,10 +26,15 @@ export default function AccountWidget() {
 	const [subscribed, setSubscribed] = useState<boolean>(false);
 	const [busy, setBusy] = useState<boolean>(false);
 	const [autoTest, setAutoTest] = useState<boolean>(false);
+	const [isMounted, setIsMounted] = useState(false);
 	const autoTimerRef = useRef<number | null>(null);
 
 	useEffect(() => {
-		if (!autoTest) {
+		setIsMounted(true);
+	}, []);
+
+	useEffect(() => {
+		if (!isMounted || !autoTest) {
 			if (autoTimerRef.current) window.clearInterval(autoTimerRef.current);
 			autoTimerRef.current = null;
 			return;
@@ -52,7 +57,7 @@ export default function AccountWidget() {
 			if (autoTimerRef.current) window.clearInterval(autoTimerRef.current);
 			autoTimerRef.current = null;
 		};
-	}, [autoTest, granted]);
+	}, [isMounted, autoTest, granted]);
 
 	const subscribeToPush = async () => {
 		try {
@@ -132,6 +137,10 @@ export default function AccountWidget() {
 			setBusy(false);
 		}
 	};
+
+	if (!isMounted) {
+		return null;
+	}
 
 	return (
 		<div className="fixed right-4 bottom-4 z-20">

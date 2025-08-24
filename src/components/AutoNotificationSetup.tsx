@@ -21,6 +21,11 @@ export default function AutoNotificationSetup() {
   const { permission, request, isSupported } = useNotifications();
   const [hasPrompted, setHasPrompted] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const setupPushSubscription = useCallback(async () => {
     if (isSubscribing) return;
@@ -44,7 +49,7 @@ export default function AutoNotificationSetup() {
       }
 
       // 既存のサブスクリプションをチェック
-      const storedKey = window.localStorage.getItem(VAPID_STORAGE_KEY);
+      const storedKey = typeof window !== 'undefined' ? window.localStorage.getItem(VAPID_STORAGE_KEY) : null;
       const existing = await reg.pushManager.getSubscription();
       
       if (existing && storedKey === vapidKey) {
@@ -73,8 +78,10 @@ export default function AutoNotificationSetup() {
       });
 
       if (response.ok) {
-        window.localStorage.setItem(VAPID_STORAGE_KEY, vapidKey);
-        try { window.localStorage.setItem('push.subscription', JSON.stringify(subscription)); } catch {}
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(VAPID_STORAGE_KEY, vapidKey);
+          try { window.localStorage.setItem('push.subscription', JSON.stringify(subscription)); } catch {}
+        }
         console.log('✅ Push subscription completed');
         
         // Send welcome notification using direct subscription
@@ -109,7 +116,7 @@ export default function AutoNotificationSetup() {
     // Ask for permission shortly after load
     const setupNotifications = async () => {
       // 既に許可されているか、サポートされていない場合はスキップ
-      if (!isSupported || permission === 'granted' || permission === 'denied' || hasPrompted) {
+      if (!isMounted || !isSupported || permission === 'granted' || permission === 'denied' || hasPrompted) {
         return;
       }
 
@@ -134,7 +141,7 @@ export default function AutoNotificationSetup() {
     };
 
     setupNotifications();
-  }, [isSupported, permission, request, hasPrompted, setupPushSubscription]);
+  }, [isMounted, isSupported, permission, request, hasPrompted, setupPushSubscription]);
 
   // No visible UI (auto-setup only)
   return null;

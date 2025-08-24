@@ -8,12 +8,18 @@ import { Bell, BellOff, BellRing } from 'lucide-react';
 export default function NotificationStatus() {
   const { permission, isSupported } = useNotifications();
   const [subscriptionCount, setSubscriptionCount] = useState<number>(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
     // サブスクリプション数を取得（開発用）
     const checkSubscriptions = async () => {
+      if (!isMounted) return;
       try {
-        if ('serviceWorker' in navigator) {
+        if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
           const reg = await navigator.serviceWorker.ready;
           const sub = await reg.pushManager.getSubscription();
           setSubscriptionCount(sub ? 1 : 0);
@@ -24,7 +30,11 @@ export default function NotificationStatus() {
     };
 
     checkSubscriptions();
-  }, [permission]);
+  }, [isMounted, permission]);
+
+  if (!isMounted) {
+    return null;
+  }
 
   if (!isSupported) {
     return (
