@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getBrowserSupabaseClient } from '@/lib/supabase/client';
 
@@ -15,7 +15,7 @@ export function useRecommendations(limit: number = 10) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRecommendations = async () => {
+  const fetchRecommendations = useCallback(async () => {
     if (!user?.id) return;
 
     setLoading(true);
@@ -39,11 +39,11 @@ export function useRecommendations(limit: number = 10) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, limit]);
 
   useEffect(() => {
     fetchRecommendations();
-  }, [user?.id, limit]);
+  }, [fetchRecommendations]);
 
   return {
     recommendations,

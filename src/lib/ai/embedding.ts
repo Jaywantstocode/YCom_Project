@@ -49,9 +49,9 @@ export async function generateKnowledgeEmbedding(
 }
 
 /**
- * Generate embedding for log summary with structured data
+ * Generate embedding for action log with structured data
  */
-export async function generateLogSummaryEmbedding(
+export async function generateActionLogEmbedding(
   summaryText: string,
   structured?: Record<string, unknown>,
   tags: string[] = []
@@ -75,8 +75,8 @@ export async function generateLogSummaryEmbedding(
     const combinedText = parts.join('\n\n');
     return await generateEmbedding(combinedText);
   } catch (error) {
-    console.error('Error generating log summary embedding:', error);
-    throw new Error('Failed to generate log summary embedding');
+    console.error('Error generating action log embedding:', error);
+    throw new Error('Failed to generate action log embedding');
   }
 }
 

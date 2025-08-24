@@ -1,5 +1,6 @@
 import { getSupabaseServiceClient } from '@/lib/supabase/server';
-import { Database } from '@/lib/supabase/database.types';
+// Database型は現在使用していないためコメントアウト
+// import { Database } from '@/lib/supabase/database.types';
 
 // 新しいテーブル構造に合わせた型定義
 type RecommendationInsert = {
@@ -27,7 +28,7 @@ export async function saveUserAdviceRecommendation(params: {
     
     const { data, error } = await supabase
       .from('recommendations')
-      .insert(recommendationData as any) // 新しいテーブル構造に対応するため一時的にany型を使用
+      .insert(recommendationData) // 型安全な挿入
       .select('id')
       .single();
     
@@ -76,7 +77,7 @@ export async function getLatestRecommendations(
       return [];
     }
     
-    return (data || []) as unknown as RecommendationRow[]; // 新しいテーブル構造に対応するため型アサーション
+    return (data || []) as RecommendationRow[]; // テーブル構造に合わせた型アサーション
     
   } catch (error) {
     console.error('❌ レコメンド取得処理エラー:', error);

@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database, Json } from "@/lib/supabase/database.types";
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
-import { generateLogSummaryEmbedding } from "@/lib/ai/embedding";
+import { generateActionLogEmbedding } from "@/lib/ai/embedding";
 
 const supabase = createClient<Database>(
 	process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -47,7 +47,7 @@ export const compressEvery10m = schedules.task({
 	},
 });
 
-type LogSummaryRowInsert = Database["public"]["Tables"]["log_summary"]["Insert"];
+// LogSummaryRowInsert type removed - using action_logs instead
 
 async function summarizeUserRecentLogs(userId: string, sinceISO: string): Promise<void> {
 	const { data, error } = await supabase
@@ -89,7 +89,7 @@ async function summarizeUserRecentLogs(userId: string, sinceISO: string): Promis
 
 	let embedding: string | null = null;
 	try {
-		embedding = await generateLogSummaryEmbedding(text, structured as unknown as Record<string, unknown>, tags);
+		embedding = await generateActionLogEmbedding(text, structured as unknown as Record<string, unknown>, tags);
 	} catch {
 		embedding = null;
 	}
@@ -108,14 +108,8 @@ async function summarizeUserRecentLogs(userId: string, sinceISO: string): Promis
 			embedding,
 		});
 
-	const row: LogSummaryRowInsert = {
-		user_id: userId,
-		summary_text: text,
-		structured,
-		tags,
-		embedding,
-	};
-	await supabase.from("log_summary").insert([row]);
+	// Summary data is now stored in action_logs table as summary_10min type
+	// No separate log_summary table insertion needed
 }
 
 async function summarizeRecentLogsForAllUsers(): Promise<void> {

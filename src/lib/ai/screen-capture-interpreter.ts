@@ -3,7 +3,7 @@ import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { getDefaultModel, getModelConfig } from './lm-models';
 import { getSupabaseServiceClient } from '../supabase/server';
-import { generateLogSummaryEmbedding } from './embedding';
+import { generateActionLogEmbedding } from './embedding';
 import { Database } from '../supabase/database.types';
 
 /**
@@ -94,7 +94,7 @@ async function saveAnalysisResultToDatabase(
     let embedding: string | null = null;
     try {
       const detailsForEmbedding = { capture_type: 'screen_summary' } as Record<string, unknown>;
-      embedding = await generateLogSummaryEmbedding(
+      embedding = await generateActionLogEmbedding(
         analysisData.description,
         detailsForEmbedding,
         tags,

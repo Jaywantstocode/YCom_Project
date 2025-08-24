@@ -2,7 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webPush from 'web-push';
 import { getSubscriptions, getSubscriptionCount } from '@/lib/notifications/subscriptions';
-import type { NextApiRequest } from 'next';
+// NextApiRequestは現在使用していないためコメントアウト
+// import type { NextApiRequest } from 'next';
 
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || '';

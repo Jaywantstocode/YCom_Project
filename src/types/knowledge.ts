@@ -5,9 +5,9 @@ export type ToolKnowledge = Tables<'tool_knowledge'>;
 export type ToolKnowledgeInsert = TablesInsert<'tool_knowledge'>;
 export type ToolKnowledgeUpdate = TablesUpdate<'tool_knowledge'>;
 
-export type LogSummary = Tables<'log_summary'>;
-export type LogSummaryInsert = TablesInsert<'log_summary'>;
-export type LogSummaryUpdate = TablesUpdate<'log_summary'>;
+export type ActionLog = Tables<'action_logs'>;
+export type ActionLogInsert = TablesInsert<'action_logs'>;
+export type ActionLogUpdate = TablesUpdate<'action_logs'>;
 
 // Extended types for search results
 export interface ToolKnowledgeSearchResult extends ToolKnowledge {
@@ -15,7 +15,7 @@ export interface ToolKnowledgeSearchResult extends ToolKnowledge {
   search_type?: 'semantic' | 'text';
 }
 
-export interface LogSummarySearchResult extends LogSummary {
+export interface ActionLogSearchResult extends ActionLog {
   similarity?: number;
 }
 
@@ -27,7 +27,7 @@ export interface KnowledgeSearchParams {
   threshold?: number;
 }
 
-export interface LogSearchParams {
+export interface ActionLogSearchParams {
   query?: string;
   tags?: string[];
   dateFrom?: Date;

@@ -56,7 +56,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         // ローディング状態はAuthContextで管理されるので、ここでは解除しない
         return;
       }
-    } catch (err) {
+    } catch {
       setError('ログイン中にエラーが発生しました。もう一度お試しください');
     }
     

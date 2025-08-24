@@ -2,7 +2,7 @@
  * Simple AI productivity analyzer
  */
 
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import { GoogleModel } from './lm-models';
@@ -72,7 +72,7 @@ const ProductivityAnalysisSchema = z.object({
     })).describe('Recommended search queries'),
     recommendedCategories: z.array(z.string()).describe('Recommended categories')
   }),
-  userAdvice: z.string().describe('Simple user advice: one actionable improvement within 3 lines')
+  userAdvice: z.string().describe('Simple plain text advice (NOT JSON): one specific actionable improvement within 3 lines. Example: "Press Cmd+Tab to switch between apps instead of using the mouse. This saves 2-3 seconds per switch and keeps your hands on the keyboard."')
 });
 
 /**
@@ -185,13 +185,10 @@ export async function analyzeVideoBase64(videoBase64: string, userId?: string): 
     console.log('📊 Video size (estimated):', sizeInMB, 'MB');
     console.log('🤖 Starting video analysis');
     
-    const result = await generateText({
-      model: google(GoogleModel.GEMINI_2_5_PRO),
+    const result = await generateObject({
+      model: google(GoogleModel.GEMINI_2_5_FLASH),
+      system: PRODUCTIVITY_AGENT_PROMPT,
       messages: [
-        {
-          role: 'system',
-          content: PRODUCTIVITY_AGENT_PROMPT
-        },
         {
           role: 'user',
           content: [
@@ -206,22 +203,14 @@ export async function analyzeVideoBase64(videoBase64: string, userId?: string): 
           ]
         }
       ],
+      schema: ProductivityAnalysisSchema,
       temperature: 0.3,
     });
     
     console.log('📝 Analysis complete');
     
-    // Parse JSON from response
-    let analysis;
-    try {
-      // Remove markdown code blocks if present
-      const jsonText = result.text.replace(/```json\n?|```\n?/g, '').trim();
-      analysis = JSON.parse(jsonText);
-    } catch (parseError) {
-      console.error('❌ JSON parsing error:', parseError);
-      // Return raw text if JSON parsing fails
-      analysis = { rawText: result.text };
-    }
+    // Use structured result directly
+    const analysis = result.object;
     
     // Save and notify user advice when analysis is complete
     if (analysis && analysis.userAdvice) {
@@ -259,13 +248,10 @@ export async function analyzeFrames(frames: string[], userId?: string): Promise<
   try {
     console.log(`🖼️ Analyzing ${frames.length} frames`);
     
-    const result = await generateText({
-      model: google(GoogleModel.GEMINI_2_5_PRO),
+    const result = await generateObject({
+      model: google(GoogleModel.GEMINI_2_5_FLASH),
+      system: PRODUCTIVITY_AGENT_PROMPT,
       messages: [
-        {
-          role: 'system',
-          content: PRODUCTIVITY_AGENT_PROMPT
-        },
         {
           role: 'user',
           content: [
@@ -280,22 +266,14 @@ export async function analyzeFrames(frames: string[], userId?: string): Promise<
           ]
         }
       ],
+      schema: ProductivityAnalysisSchema,
       temperature: 0.3,
     });
     
     console.log('📝 Frame analysis complete');
     
-    // Parse JSON from response
-    let analysis;
-    try {
-      // Remove markdown code blocks if present
-      const jsonText = result.text.replace(/```json\n?|```\n?/g, '').trim();
-      analysis = JSON.parse(jsonText);
-    } catch (parseError) {
-      console.error('❌ JSON parsing error:', parseError);
-      // Return raw text if JSON parsing fails
-      analysis = { rawText: result.text };
-    }
+    // Use structured result directly
+    const analysis = result.object;
     
     // Save and notify user advice when analysis is complete
     if (analysis && analysis.userAdvice) {
