@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { GoogleModel } from './lm-models';
 import { loadVideoData } from './video-loader';
 import { PRODUCTIVITY_AGENT_PROMPT } from './prompts';
+import { saveUserAdviceRecommendation } from '@/lib/supabase/recommendations';
 
 // Structured schema for productivity analysis (English)
 const ProductivityAnalysisSchema = z.object({
@@ -75,9 +76,29 @@ const ProductivityAnalysisSchema = z.object({
 });
 
 /**
+ * Save user advice to Supabase recommendations table
+ */
+export async function saveProductivityRecommendation(userAdvice: string, userId: string): Promise<void> {
+  try {
+    const saveResult = await saveUserAdviceRecommendation({
+      userAdvice,
+      userId,
+    });
+    
+    if (saveResult.success) {
+      console.log('✅ レコメンドをデータベースに保存しました:', saveResult.id);
+    } else {
+      console.warn('⚠️ レコメンド保存に失敗:', saveResult.error);
+    }
+  } catch (error) {
+    console.warn('⚠️ レコメンド保存処理エラー:', error);
+  }
+}
+
+/**
  * Send productivity advice as notification
  */
-async function sendProductivityNotification(userAdvice: string): Promise<void> {
+export async function sendProductivityNotification(userAdvice: string): Promise<void> {
   try {
     await fetch('/api/send-productivity-advice', {
       method: 'POST',
@@ -131,7 +152,7 @@ export interface ProductivityAnalysis {
 /**
  * Analyze video from path (local file, Supabase storage, or URL)
  */
-export async function analyzeVideoFromPath(path: string): Promise<ProductivityAnalysis> {
+export async function analyzeVideoFromPath(path: string, userId?: string): Promise<ProductivityAnalysis> {
   try {
     console.log('🎥 動画を読み込み中:', path);
     
@@ -140,10 +161,10 @@ export async function analyzeVideoFromPath(path: string): Promise<ProductivityAn
     
     if (result.type === 'video') {
       // 動画として解析
-      return analyzeVideoBase64(result.data as string);
+      return analyzeVideoBase64(result.data as string, userId);
     } else {
       // フレームとして解析
-      return analyzeFrames(result.data as string[]);
+      return analyzeFrames(result.data as string[], userId);
     }
   } catch (error) {
     console.error('❌ 動画読み込みエラー:', error);
@@ -158,7 +179,7 @@ export async function analyzeVideoFromPath(path: string): Promise<ProductivityAn
 /**
  * Analyze video from Base64 encoded data
  */
-export async function analyzeVideoBase64(videoBase64: string): Promise<ProductivityAnalysis> {
+export async function analyzeVideoBase64(videoBase64: string, userId?: string): Promise<ProductivityAnalysis> {
   try {
     const sizeInMB = (videoBase64.length * 0.75 / 1024 / 1024).toFixed(2);
     console.log('📊 動画サイズ（推定）:', sizeInMB, 'MB');
@@ -202,8 +223,16 @@ export async function analyzeVideoBase64(videoBase64: string): Promise<Productiv
       analysis = { rawText: result.text };
     }
     
-    // 分析完了時にユーザーアドバイスを通知
+    // 分析完了時にユーザーアドバイスを保存して通知
     if (analysis && analysis.userAdvice) {
+      // まずSupabaseにレコメンドを保存
+      if (userId) {
+        await saveProductivityRecommendation(analysis.userAdvice, userId);
+      } else {
+        console.warn('⚠️ ユーザーIDが不明なため、レコメンドの保存をスキップします');
+      }
+      
+      // 次に通知を送信
       await sendProductivityNotification(analysis.userAdvice);
     }
     
@@ -226,7 +255,7 @@ export async function analyzeVideoBase64(videoBase64: string): Promise<Productiv
 /**
  * Analyze multiple frames extracted from video
  */
-export async function analyzeFrames(frames: string[]): Promise<ProductivityAnalysis> {
+export async function analyzeFrames(frames: string[], userId?: string): Promise<ProductivityAnalysis> {
   try {
     console.log(`🖼️ ${frames.length}個のフレームを解析中`);
     
@@ -268,8 +297,16 @@ export async function analyzeFrames(frames: string[]): Promise<ProductivityAnaly
       analysis = { rawText: result.text };
     }
     
-    // 分析完了時にユーザーアドバイスを通知
+    // 分析完了時にユーザーアドバイスを保存して通知
     if (analysis && analysis.userAdvice) {
+      // まずSupabaseにレコメンドを保存
+      if (userId) {
+        await saveProductivityRecommendation(analysis.userAdvice, userId);
+      } else {
+        console.warn('⚠️ ユーザーIDが不明なため、レコメンドの保存をスキップします');
+      }
+      
+      // 次に通知を送信
       await sendProductivityNotification(analysis.userAdvice);
     }
     

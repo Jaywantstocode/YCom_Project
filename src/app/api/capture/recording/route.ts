@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 		let analysisResult = null;
 		try {
 			console.log('🎬 動画解析を開始:', publicUrlData.publicUrl);
-			analysisResult = await analyzeVideoFromPath(publicUrlData.publicUrl);
+			analysisResult = await analyzeVideoFromPath(publicUrlData.publicUrl, userId);
 			
 			if (analysisResult.success && userId) {
 				// 解析結果をデータベースに保存

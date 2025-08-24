@@ -140,44 +140,24 @@ export type Database = {
       }
       recommendations: {
         Row: {
+          content: string | null
           created_at: string | null
           id: string
-          log_summary_id: string
-          rationale: string | null
-          score: number | null
-          tool_title: string | null
-          tool_url: string | null
           user_id: string
         }
         Insert: {
+          content?: string | null
           created_at?: string | null
           id?: string
-          log_summary_id: string
-          rationale?: string | null
-          score?: number | null
-          tool_title?: string | null
-          tool_url?: string | null
           user_id: string
         }
         Update: {
+          content?: string | null
           created_at?: string | null
           id?: string
-          log_summary_id?: string
-          rationale?: string | null
-          score?: number | null
-          tool_title?: string | null
-          tool_url?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "recommendations_log_summary_id_fkey"
-            columns: ["log_summary_id"]
-            isOneToOne: false
-            referencedRelation: "action_logs"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tool_knowledge: {
         Row: {
@@ -206,39 +186,6 @@ export type Database = {
           tags?: string[] | null
           title?: string | null
           url?: string | null
-        }
-        Relationships: []
-      }
-      log_summary: {
-        Row: {
-          id: string
-          user_id: string
-          action_log_id: string | null
-          summary_text: string
-          structured: Json | null
-          tags: string[] | null
-          embedding: string | null
-          created_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          action_log_id?: string | null
-          summary_text: string
-          structured?: Json | null
-          tags?: string[] | null
-          embedding?: string | null
-          created_at?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          action_log_id?: string | null
-          summary_text?: string
-          structured?: Json | null
-          tags?: string[] | null
-          embedding?: string | null
-          created_at?: string | null
         }
         Relationships: []
       }
