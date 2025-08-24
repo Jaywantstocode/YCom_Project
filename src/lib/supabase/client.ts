@@ -21,10 +21,48 @@ export function getBrowserSupabaseClient(): SupabaseClient<Database> {
 				autoRefreshToken: true,
 				persistSession: true,
 				detectSessionInUrl: true,
+				storage: {
+					getItem: (key: string) => {
+						if (typeof window !== 'undefined') {
+							return window.localStorage.getItem(key);
+						}
+						return null;
+					},
+					setItem: (key: string, value: string) => {
+						if (typeof window !== 'undefined') {
+							window.localStorage.setItem(key, value);
+						}
+					},
+					removeItem: (key: string) => {
+						if (typeof window !== 'undefined') {
+							window.localStorage.removeItem(key);
+						}
+					},
+				},
+				storageKey: 'ycom-auth-token', // カスタムストレージキー
+				flowType: 'pkce', // PKCE フローを使用してセキュリティを向上
 			},
 			global: {
 				headers: {
 					'x-client-info': 'ycom-webapp',
+				},
+				fetch: (url, options = {}) => {
+					// タイムアウトを設定
+					const controller = new AbortController();
+					const timeout = setTimeout(() => controller.abort(), 5000); // 5秒のタイムアウト
+					
+					return fetch(url, {
+						...options,
+						signal: controller.signal,
+					}).finally(() => clearTimeout(timeout));
+				},
+			},
+			db: {
+				schema: 'public',
+			},
+			realtime: {
+				params: {
+					eventsPerSecond: 10,
 				},
 			},
 		});

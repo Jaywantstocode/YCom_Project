@@ -27,16 +27,37 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // 入力検証を先に実行
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+    
     setLoading(true);
 
-    const { error } = await signIn(email, password);
-    
-    if (error) {
-      setError(error.message);
-    } else {
-      onClose();
-      setEmail('');
-      setPassword('');
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        // エラーメッセージを日本語化してわかりやすく
+        if (error.message.includes('Invalid login credentials')) {
+          setError('メールアドレスまたはパスワードが正しくありません');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('メールアドレスの確認が完了していません。確認メールをご確認ください');
+        } else {
+          setError(error.message);
+        }
+      } else {
+        // 成功時は即座にモーダルを閉じる
+        onClose();
+        setEmail('');
+        setPassword('');
+        // ローディング状態はAuthContextで管理されるので、ここでは解除しない
+        return;
+      }
+    } catch (err) {
+      setError('ログイン中にエラーが発生しました。もう一度お試しください');
     }
     
     setLoading(false);

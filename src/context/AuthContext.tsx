@@ -92,6 +92,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     if (!supabase) return null;
     
+    // セッションストレージからキャッシュをチェック
+    const cacheKey = `profile_${userId}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const cachedData = JSON.parse(cached);
+        // キャッシュが5分以内の場合は使用
+        if (cachedData.timestamp && Date.now() - cachedData.timestamp < 5 * 60 * 1000) {
+          return cachedData.profile;
+        }
+      } catch {}
+    }
+    
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -104,6 +117,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
+      // キャッシュに保存
+      sessionStorage.setItem(cacheKey, JSON.stringify({
+        profile: data,
+        timestamp: Date.now()
+      }));
+      
       return data;
     } catch (error) {
       console.error('Profile fetch error:', error);
@@ -179,14 +198,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(sess);
           setUser(sess?.user ?? null);
           
+          // プロファイル取得を非同期で実行（ローディングをブロックしない）
           if (sess?.user) {
             console.log('Fetching profile for user:', sess.user.email);
-            const userProfile = await fetchProfile(sess.user.id);
-            setProfile(userProfile);
+            // ローディングを先に解除
+            setLoading(false);
+            // プロファイル取得は非同期で実行
+            fetchProfile(sess.user.id).then(userProfile => {
+              if (mounted) {
+                setProfile(userProfile);
+              }
+            });
+          } else {
+            setLoading(false);
           }
           
           console.log('Initial session setup complete');
-          setLoading(false);
         }
       } catch (error) {
         console.error('Unexpected error in getInitialSession:', error);
@@ -198,13 +225,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getInitialSession();
 
-    // フェイルセーフ: 10秒後にローディングを強制的に解除
+    // フェイルセーフ: 3秒後にローディングを強制的に解除（10秒から短縮）
     const fallbackTimer = setTimeout(() => {
       if (mounted) {
         console.warn('Auth initialization timed out, setting loading to false');
         setLoading(false);
       }
-    }, 10000);
+    }, 3000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -240,9 +267,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setLoading(true);
     const result = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
+    
+    // ログイン成功時はプロファイルを非同期で取得
+    if (!result.error && result.data.user) {
+      // ローディングを先に解除
+      setLoading(false);
+      // プロファイル取得は非同期で実行
+      fetchProfile(result.data.user.id).then(userProfile => {
+        setProfile(userProfile);
+      });
+    } else {
+      setLoading(false);
+    }
+    
     return { error: result.error };
-  }, [supabase]);
+  }, [supabase, fetchProfile]);
 
   const signUp = useCallback(async (email: string, password: string) => {
     if (!supabase) {
