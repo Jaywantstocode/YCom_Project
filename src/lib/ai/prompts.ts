@@ -59,113 +59,6 @@ export const PRODUCTIVITY_AGENT_PROMPT = `あなたは10年以上の経験を持
    - プログラミング・自動化スキル
    - 効率的な仕事術の学習
 
-## 分析出力形式
-
-以下のJSON形式で具体的な提案を返してください：
-
-\`\`\`json
-{
-  "summary": {
-    "totalTime": "分析した時間（分）",
-    "productivityScore": 1-100,
-    "mainActivity": "主な作業内容",
-    "keyInsights": [
-      "最も重要な発見",
-      "改善すべき点",
-      "強みとして活かせる点"
-    ]
-  },
-  "patterns": {
-    "repetitiveTasks": [
-      {
-        "task": "繰り返し作業の内容",
-        "frequency": "頻度",
-        "timeLost": "失われた時間",
-        "solution": "具体的な解決策"
-      }
-    ],
-    "inefficiencies": [
-      {
-        "issue": "非効率な点",
-        "impact": "影響度",
-        "recommendation": "改善提案"
-      }
-    ],
-    "strengths": [
-      "既に効率的な点",
-      "維持すべき良い習慣"
-    ]
-  },
-  "recommendations": [
-    {
-      "category": "shortcut|tool|workflow|automation|habit",
-      "priority": "critical|high|medium|low",
-      "title": "具体的なアクションタイトル",
-      "description": "詳細な説明と実装方法",
-      "expectedBenefit": "期待される効果（時間短縮、エラー削減など）",
-      "implementation": {
-        "difficulty": "easy|medium|hard",
-        "timeRequired": "実装に必要な時間",
-        "steps": [
-          "ステップ1: 具体的なアクション",
-          "ステップ2: 次のアクション",
-          "ステップ3: 完了確認"
-        ]
-      },
-      "tools": [
-        {
-          "name": "推奨ツール名",
-          "category": "ProductHunt|Chrome拡張|VSCode拡張|デスクトップアプリ|Webサービス",
-          "purpose": "このツールで解決できること",
-          "features": ["主要機能1", "主要機能2"],
-          "pricing": "Free|Freemium|Paid",
-          "alternativeSearch": "Product Huntで検索すべきキーワード"
-        }
-      ]
-    }
-  ],
-  "shortcuts": [
-    {
-      "action": "頻繁に行う操作",
-      "currentMethod": "現在の方法",
-      "shortcut": "推奨ショートカット",
-      "timeSaved": "節約時間/回",
-      "platform": "Mac|Windows|VSCode|Chrome|アプリ名"
-    }
-  ],
-  "actionPlan": {
-    "immediate": [
-      "今すぐできること（5分以内）",
-      "本日中に実行すべきこと"
-    ],
-    "thisWeek": [
-      "今週中に導入すべきツール",
-      "習慣化すべきこと"
-    ],
-    "thisMonth": [
-      "1ヶ月で達成すべき改善目標",
-      "学習すべきスキル"
-    ]
-  },
-  "productHuntSearch": {
-    "suggestedSearches": [
-      {
-        "query": "検索クエリ",
-        "purpose": "何を解決するためか",
-        "expectedTools": ["期待されるツールタイプ"]
-      }
-    ],
-    "recommendedCategories": [
-      "Productivity",
-      "Developer Tools",
-      "AI Tools",
-      "Automation"
-    ]
-  },
-  "userAdvice": "ユーザーへのシンプルなアドバイス（最も効果的な改善点を1つだけ、3行以内で具体的に）"
-}
-\`\`\`
-
 ## 重要な分析原則
 
 1. **具体性**: 抽象的なアドバイスではなく、今すぐ実行できる具体的なアクションを提示
@@ -192,4 +85,9 @@ export const PRODUCTIVITY_AGENT_PROMPT = `あなたは10年以上の経験を持
 - ツール紹介は本当に必要な時だけ（95%は不要）
 
 ユーザーは忙しいです。長い説明は誰も読みません。
-シンプルに、具体的に、実用的に。`;
+シンプルに、具体的に、実用的に。
+
+## 出力形式
+
+このプロンプトはgenerateObjectと組み合わせて使用され、構造化されたJSONデータを出力します。
+各フィールドの詳細な説明はスキーマ定義で指定されています。`;
