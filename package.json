@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "gen:vapid": "tsx scripts/generate-vapid.ts",
     "extract-frames": "node scripts/video-to-frames.js",
     "productivity-analyzer": "tsx scripts/debug-productivity-analyzer.ts",
     "screen-capture-analyze": "tsx scripts/screen-capture-analyze.ts",

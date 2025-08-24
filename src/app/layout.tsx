@@ -5,6 +5,7 @@ import { SessionProvider } from "@/context/SessionContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 import AutoNotificationSetup from "@/components/AutoNotificationSetup";
+import AccountWidget from "@/components/AccountWidget";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,6 +40,7 @@ export default function RootLayout({
         <AuthProvider>
           <SessionProvider>
             <AutoNotificationSetup />
+            <AccountWidget />
             {children}
             <Toaster />
           </SessionProvider>

@@ -16,3 +16,7 @@ export function getSubscriptions(): unknown[] {
 export function getSubscriptionCount(): number {
   return subscriptions.length;
 }
+
+export function clearSubscriptions(): void {
+  subscriptions.splice(0, subscriptions.length);
+}

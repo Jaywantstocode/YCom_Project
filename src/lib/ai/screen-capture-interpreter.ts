@@ -6,6 +6,29 @@ import { getSupabaseServiceClient } from '../supabase/server';
 import { generateLogSummaryEmbedding } from './embedding';
 import { Database } from '../supabase/database.types';
 
+/**
+ * Send a server push notification with absolute URL when on server
+ */
+async function sendProductivityNotification(body: string, title = '💡 Screen Summary'): Promise<void> {
+  try {
+    const isBrowser = typeof window !== 'undefined';
+    const base = isBrowser
+      ? ''
+      : (process.env.NOTIFICATION_BASE_URL
+          || process.env.NEXT_PUBLIC_APP_URL
+          || `http://localhost:${process.env.PORT || 3000}`);
+    const url = `${base}/api/send-productivity-advice`;
+
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, body })
+    });
+  } catch (err) {
+    console.warn('Failed to send productivity notification:', err);
+  }
+}
+
 // AI analysis input parameters (all optional)
 export interface AnalysisInput {
   image?: Buffer | string; // Image data (Buffer) or URL
@@ -232,6 +255,10 @@ export async function analyzeAndSaveScreenCapture(input: AnalysisInput): Promise
           input.actionLogId,
           timestamp
         );
+        // Send server push with the summary after successful analysis
+        if (analysisResult.analysis?.description) {
+          await sendProductivityNotification(analysisResult.analysis.description);
+        }
         
         return {
           ...analysisResult,
@@ -239,6 +266,10 @@ export async function analyzeAndSaveScreenCapture(input: AnalysisInput): Promise
         };
       } catch (dbError) {
         console.error('❌ Database save failed, returning analysis without saving:', dbError);
+        // Still attempt to send push to inform user of analysis completion
+        if (analysisResult.analysis?.description) {
+          await sendProductivityNotification(analysisResult.analysis.description);
+        }
         // Return analysis result even if database save fails
         return {
           ...analysisResult,
@@ -247,6 +278,10 @@ export async function analyzeAndSaveScreenCapture(input: AnalysisInput): Promise
       }
     } else {
       console.log('⚠️ Missing userId or actionLogId, skipping database save');
+      // Still send push if we have a summary
+      if (analysisResult.analysis?.description) {
+        await sendProductivityNotification(analysisResult.analysis.description);
+      }
       return analysisResult;
     }
 

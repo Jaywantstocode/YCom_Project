@@ -3,29 +3,30 @@
  */
 
 async function testProductivityNotification() {
-  console.log('🧪 生産性アドバイス通知テストを開始...');
+  console.log('🧪 Starting productivity advice notification test...');
 
   try {
-    const response = await fetch('http://localhost:3000/api/send-productivity-advice', {
+    const url = process.env.TEST_BASE_URL || 'http://localhost:3000';
+    const response = await fetch(`${url}/api/send-productivity-advice`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        title: '💡 テスト: 生産性アドバイス',
-        body: 'これはテスト通知です。Cmd+Tabの代わりにCmd+`を使うと、同じアプリ内のウィンドウ切り替えが3倍速くなります。'
+        title: '💡 Test: Productivity Advice',
+        body: 'This is a test notification. Tip: Use Cmd+` to switch windows within the same app faster than Cmd+Tab.'
       })
     });
 
     const result = await response.json();
     
     if (response.ok) {
-      console.log('✅ 通知送信成功:', result);
+      console.log('✅ Notification sent:', result);
     } else {
-      console.error('❌ 通知送信失敗:', result);
+      console.error('❌ Notification failed:', result);
     }
   } catch (error) {
-    console.error('❌ テストエラー:', error);
+    console.error('❌ Test error:', error);
   }
 }
 

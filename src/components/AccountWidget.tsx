@@ -37,13 +37,13 @@ export default function AccountWidget() {
 		autoTimerRef.current = window.setInterval(async () => {
 			try {
 				if (granted) {
-					new Notification('Auto Test', { body: 'Local notification every 10s' });
+					new Notification('Auto Test', { body: 'Local notification every 10 seconds' });
 				}
 				if ('serviceWorker' in navigator) {
 					const reg = await navigator.serviceWorker.ready;
 					const sub = await reg.pushManager.getSubscription();
 					if (sub) {
-						await fetch('/api/send-notification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub, title: 'Auto Push', body: 'Server push every 10s' }) });
+						await fetch('/api/send-notification', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub, title: 'Auto Push', body: 'Server push every 10 seconds' }) });
 					}
 				}
 			} catch {}
@@ -84,7 +84,8 @@ export default function AccountWidget() {
 				await existing.unsubscribe();
 			}
 			const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidKey) });
-			await fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub) });
+			await fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub }) });
+			try { window.localStorage.setItem('push.subscription', JSON.stringify(sub)); } catch {}
 			if (typeof window !== 'undefined') window.localStorage.setItem(VAPID_STORAGE_KEY, vapidKey);
 			setSubscribed(true);
 			setPushMessage('Subscribed to push');
@@ -98,7 +99,8 @@ export default function AccountWidget() {
 					const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY as string | undefined;
 					if (vapidKey) {
 						const newSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(vapidKey) });
-						await fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(newSub) });
+						await fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: newSub }) });
+						try { window.localStorage.setItem('push.subscription', JSON.stringify(newSub)); } catch {}
 						if (typeof window !== 'undefined') window.localStorage.setItem(VAPID_STORAGE_KEY, vapidKey);
 						setSubscribed(true);
 						setPushMessage('Resubscribed with new key');

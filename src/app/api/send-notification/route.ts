@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webPush from 'web-push';
 
+// Ensure Node.js runtime for web-push
+export const runtime = 'nodejs';
+
 const VAPID_PUBLIC = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || '';
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:example@example.com';
@@ -18,7 +21,10 @@ export async function POST(req: NextRequest) {
 		if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
 			return NextResponse.json({ error: 'Server VAPID keys not configured' }, { status: 500 });
 		}
-		await webPush.sendNotification(subscription, JSON.stringify({ title, body }));
+		// Some browsers require TTL and content-encoding hints for reliability
+		await webPush.sendNotification(subscription, JSON.stringify({ title, body }), {
+			TTL: 60,
+		});
 		return NextResponse.json({ ok: true });
 	} catch (error: unknown) {
 		const message = error instanceof Error ? error.message : 'Unknown error';

@@ -48,6 +48,40 @@ export default function CaptureClient() {
 	const lastSummaryRef = useRef<string>('');
 	const { speak } = useRealtimeSpeaker();
 
+	// Send a server push using the current push subscription
+	const sendPushWithSubscription = useCallback(async (title: string, body: string): Promise<boolean> => {
+		try {
+			if ('serviceWorker' in navigator) {
+				const reg = await navigator.serviceWorker.ready;
+				const sub = await reg.pushManager.getSubscription();
+				if (sub) {
+					await fetch('/api/send-notification', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ subscription: sub, title, body })
+					});
+					return true;
+				}
+			}
+			// Fallback: use cached subscription
+			const raw = typeof window !== 'undefined' ? window.localStorage.getItem('push.subscription') : null;
+			if (raw) {
+				const cached = JSON.parse(raw);
+				if (cached && cached.endpoint) {
+					await fetch('/api/send-notification', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ subscription: cached, title, body })
+					});
+					return true;
+				}
+			}
+			return false;
+		} catch {
+			return false;
+		}
+	}, []);
+
 	const resetUpload = useCallback(() => {
 		setUploaded(null);
 		setStatus('');
@@ -123,10 +157,14 @@ export default function CaptureClient() {
 				lastSummaryRef.current = summary;
 				await speak(summary);
 			}
+			// Send push using the working method (direct subscription)
+			if (summary) {
+				await sendPushWithSubscription('💡 Productivity Advice', summary);
+			}
 		} catch (e) {
 			setStatus(e instanceof Error ? e.message : 'Error');
 		}
-	}, [resetUpload, uploadTo, saveLocal, saveFile, captureStillBlob, commentaryEnabled, speak]);
+	}, [resetUpload, uploadTo, saveLocal, saveFile, captureStillBlob, commentaryEnabled, speak, sendPushWithSubscription]);
 
 	const startRecordingCycle = useCallback(() => {
 		const runOnce = () => {
@@ -149,6 +187,13 @@ export default function CaptureClient() {
 						const data = await uploadTo('/api/capture/recording', file);
 						setUploaded(data);
 						setStatus('Uploaded recording');
+						// If analysis result includes advice, send push via direct subscription
+						try {
+							const advice: unknown = (data as unknown as { analysis?: { userAdvice?: unknown } })?.analysis?.userAdvice;
+							if (typeof advice === 'string' && advice) {
+								await sendPushWithSubscription('💡 Productivity Advice', advice);
+							}
+						} catch {}
 					} catch (err) {
 						setStatus(err instanceof Error ? err.message : 'Upload error');
 					} finally {
@@ -170,7 +215,7 @@ export default function CaptureClient() {
 		};
 		// kick off first cycle now
 		runOnce();
-	}, [saveLocal, saveFile, uploadTo]);
+	}, [saveLocal, saveFile, uploadTo, sendPushWithSubscription]);
 
 	const startPeriodicScreenshots = useCallback(() => {
 		shotTimerRef.current = window.setInterval(async () => {
@@ -201,33 +246,24 @@ export default function CaptureClient() {
 			streamRef.current = stream;
 			stopRequestedRef.current = false;
 			setIsRecording(true);
-			setStatus('Recording (periodic: screenshot 10s, recording 60s)...');
+			setStatus('Recording (periodic: screenshot every 10s, recording every 60s)...');
 			startPeriodicScreenshots();
 			startRecordingCycle();
-			// 録画開始通知を送信
+			// Send start notification via direct subscription
 			try {
-				await fetch('/api/send-productivity-advice', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						title: '🎬 録画開始',
-						body: '生産性分析のための画面録画を開始しました。10秒ごとのスクリーンショットと60秒ごとの録画を実行中です。'
-					})
-				});
+				await sendPushWithSubscription('🎬 Recording started', 'Screen recording started for productivity analysis. Taking screenshots every 10s and recordings every 60s.');
 			} catch (error) {
-				console.warn('録画開始通知の送信に失敗:', error);
+				console.warn('Failed to send start recording notification:', error);
 			}
 			
-			// フォールバック: ローカル通知も送信
+			// Fallback: local notification
 			if (permission === 'granted') {
-				notify('🎬 録画開始', { body: '生産性分析のための画面録画を開始しました。' });
+				notify('🎬 Recording started', { body: 'Screen recording started.' });
 			}
 		} catch (e) {
 			setStatus(e instanceof Error ? e.message : 'Error');
 		}
-	}, [resetUpload, startPeriodicScreenshots, startRecordingCycle, isSupported, permission, requestNotif, notify]);
+	}, [resetUpload, startPeriodicScreenshots, startRecordingCycle, isSupported, permission, requestNotif, notify, sendPushWithSubscription]);
 
 	const handleStopRecording = useCallback(() => {
 		stopRequestedRef.current = true;
@@ -248,27 +284,16 @@ export default function CaptureClient() {
 		setIsRecording(false);
 		setStatus('Stopped');
 		
-		// 録画停止通知を送信
-		try {
-			fetch('/api/send-productivity-advice', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				body: JSON.stringify({
-					title: '⏹️ 録画停止',
-					body: '画面録画を停止しました。録画データの分析が完了すると生産性アドバイスをお届けします。'
-				})
-			}).catch(error => console.warn('録画停止通知の送信に失敗:', error));
-		} catch (error) {
-			console.warn('録画停止通知の送信に失敗:', error);
-		}
+		// Send stop notification via direct subscription
+		sendPushWithSubscription('⏹️ Recording stopped', 'Screen recording stopped. You will receive productivity advice when analysis is finished.').catch((error) => {
+			console.warn('Failed to send stop recording notification:', error);
+		});
 		
-		// フォールバック: ローカル通知も送信
+		// Fallback: local notification
 		if (permission === 'granted') {
-			notify('⏹️ 録画停止', { body: '画面録画を停止しました。' });
+			notify('⏹️ Recording stopped', { body: 'Screen recording stopped.' });
 		}
-	}, [permission, notify]);
+	}, [permission, notify, sendPushWithSubscription]);
 
 	return (
 		<Card className="w-full max-w-2xl">
